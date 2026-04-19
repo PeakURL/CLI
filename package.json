@@ -1,0 +1,44 @@
+{
+    "name": "peakurl",
+    "version": "0.1.0",
+    "description": "PeakURL command-line interface",
+    "homepage": "https://peakurl.org/",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/PeakURL/PeakURL-CLI.git"
+    },
+    "type": "module",
+    "bin": {
+        "peakurl": "bin/peakurl.js"
+    },
+    "files": [
+        "bin"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "build": "tsup --config tsup.config.ts",
+        "dev": "tsx src/index.ts",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "test": "tsx --test test/*.test.ts",
+        "typecheck": "tsc --noEmit",
+        "prepare": "npm run build"
+    },
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org/"
+    },
+    "dependencies": {
+        "commander": "^14.0.0",
+        "env-paths": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^24.0.0",
+        "prettier": "^3.6.2",
+        "tsup": "^8.5.0",
+        "tsx": "^4.20.6",
+        "typescript": "^5.9.3"
+    },
+    "license": "MIT"
+}
