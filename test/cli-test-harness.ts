@@ -29,11 +29,23 @@ const mockLink = {
     title: "Launch",
     status: "active",
     clicks: 3,
+    uniqueClicks: 2,
+    expiresAt: "2026-05-01T00:00:00.000Z",
     createdAt: "2026-04-19T20:00:00.000Z",
     updatedAt: "2026-04-19T20:00:00.000Z",
 };
 
-let baseUrl = "";
+const mockWebhook = {
+    id: "webhook_123",
+    url: "https://example.com/api/webhooks/peakurl",
+    events: ["link.clicked"],
+    secretHint: "whsec_12345••••••••••••••••••",
+    isActive: true,
+    createdAt: "2026-04-19T20:00:00.000Z",
+};
+
+let siteUrl = "";
+let apiBaseUrl = "";
 let cliVersion = "";
 let server: ReturnType<typeof createServer>;
 
@@ -63,7 +75,7 @@ function sendJsonResponse(
 
 async function parseRequestJsonBody(
     request: IncomingMessage,
-): Promise<Record<string, unknown>> {
+): Promise<unknown> {
     const chunks: Buffer[] = [];
 
     for await (const chunk of request) {
@@ -71,7 +83,7 @@ async function parseRequestJsonBody(
     }
 
     const text = Buffer.concat(chunks).toString("utf8");
-    return text ? (JSON.parse(text) as Record<string, unknown>) : {};
+    return text ? (JSON.parse(text) as unknown) : {};
 }
 
 function successEnvelope(message: string, data: unknown) {
@@ -111,9 +123,14 @@ export function escapeForRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function mockBaseUrl(): string {
-    assert.ok(baseUrl, "Mock CLI base URL is not initialized yet.");
-    return baseUrl;
+export function mockSiteUrl(): string {
+    assert.ok(siteUrl, "Mock CLI site URL is not initialized yet.");
+    return siteUrl;
+}
+
+export function mockApiBaseUrl(): string {
+    assert.ok(apiBaseUrl, "Mock CLI API base URL is not initialized yet.");
+    return apiBaseUrl;
 }
 
 export function getCliVersion(): string {
@@ -171,7 +188,10 @@ before(async () => {
         }
 
         if (request.method === "POST" && url.pathname === "/api/v1/urls") {
-            const body = await parseRequestJsonBody(request);
+            const body = (await parseRequestJsonBody(request)) as Record<
+                string,
+                unknown
+            >;
             sendJsonResponse(
                 response,
                 201,
@@ -202,6 +222,32 @@ before(async () => {
 
         if (
             request.method === "GET" &&
+            url.pathname === "/api/v1/urls/export"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("URLs export loaded.", {
+                    items: [mockLink],
+                    meta: {
+                        totalItems: 1,
+                    },
+                }),
+            );
+            return;
+        }
+
+        if (request.method === "GET" && url.pathname === "/api/v1/webhooks") {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Webhooks loaded.", [mockWebhook]),
+            );
+            return;
+        }
+
+        if (
+            request.method === "GET" &&
             (url.pathname === `/api/v1/urls/${mockLink.alias}` ||
                 url.pathname === `/api/v1/urls/${mockLink.id}`)
         ) {
@@ -209,6 +255,73 @@ before(async () => {
                 response,
                 200,
                 successEnvelope("URL loaded.", mockLink),
+            );
+            return;
+        }
+
+        if (request.method === "POST" && url.pathname === "/api/v1/webhooks") {
+            const body = (await parseRequestJsonBody(request)) as Record<
+                string,
+                unknown
+            >;
+            sendJsonResponse(
+                response,
+                201,
+                successEnvelope("Webhook created.", {
+                    id: "webhook_new",
+                    url: String(body.url ?? mockWebhook.url),
+                    events: Array.isArray(body.events)
+                        ? body.events
+                        : mockWebhook.events,
+                    secret: "whsec_createdsecret1234567890",
+                    secretHint: "whsec_crea••••••••••••••••••",
+                    isActive: true,
+                    createdAt: "2026-04-19T20:00:00.000Z",
+                }),
+            );
+            return;
+        }
+
+        if (request.method === "POST" && url.pathname === "/api/v1/urls/bulk") {
+            const body = (await parseRequestJsonBody(request)) as {
+                urls?: Array<Record<string, unknown>>;
+            };
+            const urls = Array.isArray(body.urls) ? body.urls : [];
+            const results = urls.map((item, index) => {
+                const alias =
+                    typeof item.alias === "string" && item.alias.trim()
+                        ? item.alias.trim()
+                        : `import-${index + 1}`;
+
+                return {
+                    ...mockLink,
+                    id: `url_import_${index + 1}`,
+                    alias,
+                    shortCode: alias,
+                    shortUrl: `https://peakurl.test/${alias}`,
+                    destinationUrl: String(item.destinationUrl ?? ""),
+                    title:
+                        typeof item.title === "string"
+                            ? item.title
+                            : mockLink.title,
+                    status:
+                        typeof item.status === "string"
+                            ? item.status
+                            : mockLink.status,
+                    expiresAt:
+                        typeof item.expiresAt === "string"
+                            ? item.expiresAt
+                            : mockLink.expiresAt,
+                };
+            });
+
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Bulk import processed.", {
+                    results,
+                    errors: [],
+                }),
             );
             return;
         }
@@ -221,6 +334,19 @@ before(async () => {
                 response,
                 200,
                 successEnvelope("URL deleted.", null),
+            );
+            return;
+        }
+
+        if (
+            request.method === "DELETE" &&
+            (url.pathname === `/api/v1/webhooks/${mockWebhook.id}` ||
+                url.pathname === "/api/v1/webhooks/webhook_new")
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Webhook deleted.", { deleted: true }),
             );
             return;
         }
@@ -243,7 +369,8 @@ before(async () => {
         throw new Error("Could not determine mock server address.");
     }
 
-    baseUrl = `http://127.0.0.1:${address.port}`;
+    siteUrl = `http://127.0.0.1:${address.port}`;
+    apiBaseUrl = `${siteUrl}/api/v1`;
 });
 
 after(async () => {
@@ -279,7 +406,7 @@ export async function runCli(
                 ...process.env,
                 HOME: homeDir,
                 XDG_CONFIG_HOME: join(homeDir, ".config"),
-                PEAKURL_BASE_URL: mockBaseUrl(),
+                PEAKURL_BASE_URL: mockApiBaseUrl(),
                 PEAKURL_API_KEY: VALID_TOKEN,
                 PEAKURL_DISABLE_UPDATE_CHECK: "1",
                 ...extraEnv,

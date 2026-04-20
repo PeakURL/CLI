@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
     configPathForHome,
-    mockBaseUrl,
+    mockApiBaseUrl,
     runCli,
     VALID_TOKEN,
 } from "./cli-test-harness.js";
@@ -28,30 +28,42 @@ describe("PeakURL CLI Authentication", () => {
 
         const configPath = configPathForHome(result.homeDir);
         const savedConfig = JSON.parse(await readFile(configPath, "utf8")) as {
-            baseUrl: string;
+            apiBaseUrl: string;
             apiKey: string;
         };
 
-        assert.equal(savedConfig.baseUrl, mockBaseUrl());
+        assert.equal(savedConfig.apiBaseUrl, mockApiBaseUrl());
         assert.equal(savedConfig.apiKey, VALID_TOKEN);
     });
 
-    it("normalizes dashboard API URLs during login", async () => {
-        const result = await runCli([
-            "login",
-            "--base-url",
-            `${mockBaseUrl()}/api/v1`,
-        ]);
+    it("stores the API base URL exactly as provided", async () => {
+        const result = await runCli(["login", "--base-url", mockApiBaseUrl()]);
 
         assert.equal(result.code, 0);
 
         const configPath = configPathForHome(result.homeDir);
         const savedConfig = JSON.parse(await readFile(configPath, "utf8")) as {
-            baseUrl: string;
+            apiBaseUrl: string;
             apiKey: string;
         };
 
-        assert.equal(savedConfig.baseUrl, mockBaseUrl());
+        assert.equal(savedConfig.apiBaseUrl, mockApiBaseUrl());
+    });
+
+    it("requires the explicit API base URL during login", async () => {
+        const result = await runCli(
+            ["login", "--base-url", "http://127.0.0.1:65535"],
+            {
+                PEAKURL_BASE_URL: "",
+                PEAKURL_API_KEY: VALID_TOKEN,
+            },
+        );
+
+        assert.equal(result.code, 1);
+        assert.match(
+            result.stderr,
+            /PeakURL API base URL must end with \/api\/v1\./,
+        );
     });
 
     it("returns the authenticated user as JSON", async () => {

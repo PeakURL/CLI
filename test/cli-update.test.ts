@@ -4,7 +4,7 @@ import {
     escapeForRegExp,
     getCliVersion,
     getLatestCliVersion,
-    mockBaseUrl,
+    mockSiteUrl,
     runCli,
 } from "./cli-test-harness.js";
 
@@ -13,7 +13,7 @@ describe("PeakURL CLI Update Checks", () => {
         const result = await runCli(["whoami"], {
             PEAKURL_DISABLE_UPDATE_CHECK: "0",
             PEAKURL_FORCE_UPDATE_NOTICE: "1",
-            PEAKURL_NPM_REGISTRY_URL: `${mockBaseUrl()}/npm-registry`,
+            PEAKURL_NPM_REGISTRY_URL: `${mockSiteUrl()}/npm-registry`,
         });
 
         assert.equal(result.code, 0);
@@ -29,7 +29,7 @@ describe("PeakURL CLI Update Checks", () => {
 
     it("returns update status as JSON without installing", async () => {
         const result = await runCli(["update", "--check", "--json"], {
-            PEAKURL_NPM_REGISTRY_URL: `${mockBaseUrl()}/npm-registry`,
+            PEAKURL_NPM_REGISTRY_URL: `${mockSiteUrl()}/npm-registry`,
         });
 
         assert.equal(result.code, 0);
@@ -55,7 +55,7 @@ describe("PeakURL CLI Update Checks", () => {
 
     it("prints the recommended update command without installing", async () => {
         const result = await runCli(["update"], {
-            PEAKURL_NPM_REGISTRY_URL: `${mockBaseUrl()}/npm-registry`,
+            PEAKURL_NPM_REGISTRY_URL: `${mockSiteUrl()}/npm-registry`,
         });
 
         assert.equal(result.code, 0);

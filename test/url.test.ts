@@ -2,25 +2,35 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
     CliError,
-    normalizeBaseUrl,
+    getApiBaseUrl,
     normalizeDestinationUrl,
+    normalizeWebhookUrl,
 } from "../src/lib/index.js";
 
 describe("URL Validation", () => {
-    it("normalizes PeakURL API roots back to the install root", () => {
+    it("accepts explicit PeakURL API base URLs", () => {
         assert.equal(
-            normalizeBaseUrl("https://dev.peakurl.org/api/v1"),
-            "https://dev.peakurl.org",
+            getApiBaseUrl("https://dev.peakurl.org/api/v1"),
+            "https://dev.peakurl.org/api/v1",
         );
     });
 
-    it("rejects base URLs with embedded credentials", () => {
+    it("rejects API base URLs that do not end with /api/v1", () => {
         assert.throws(
-            () => normalizeBaseUrl("https://user:pass@peakurl.org"),
+            () => getApiBaseUrl("https://dev.peakurl.org"),
+            (error: unknown) =>
+                error instanceof CliError &&
+                error.message === "PeakURL API base URL must end with /api/v1.",
+        );
+    });
+
+    it("rejects API base URLs with embedded credentials", () => {
+        assert.throws(
+            () => getApiBaseUrl("https://user:pass@peakurl.org/api/v1"),
             (error: unknown) =>
                 error instanceof CliError &&
                 error.message ===
-                    "PeakURL base URL must not include embedded credentials.",
+                    "PeakURL API base URL must not include embedded credentials.",
         );
     });
 
@@ -40,6 +50,16 @@ describe("URL Validation", () => {
                 error instanceof CliError &&
                 error.message ===
                     "Destination URL must not include embedded credentials.",
+        );
+    });
+
+    it("rejects webhook URLs with embedded credentials", () => {
+        assert.throws(
+            () => normalizeWebhookUrl("https://user:pass@example.com/webhook"),
+            (error: unknown) =>
+                error instanceof CliError &&
+                error.message ===
+                    "Webhook URL must not include embedded credentials.",
         );
     });
 });
