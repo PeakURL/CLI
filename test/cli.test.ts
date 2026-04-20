@@ -98,6 +98,27 @@ before(async () => {
             request.url || "/",
             `http://${request.headers.host}`,
         );
+
+        if (request.method === "GET" && url.pathname === "/api/v1/users/me") {
+            sendJson(
+                response,
+                200,
+                createEnvelope("Current user loaded.", user),
+            );
+            return;
+        }
+
+        if (
+            request.method === "GET" &&
+            url.pathname === "/npm-registry/peakurl/latest"
+        ) {
+            sendJson(response, 200, {
+                name: "peakurl",
+                version: "0.2.0",
+            });
+            return;
+        }
+
         const authHeader = request.headers.authorization;
 
         if (authHeader !== `Bearer ${VALID_TOKEN}`) {
@@ -107,15 +128,6 @@ before(async () => {
                 data: null,
                 timestamp: "2026-04-19T20:00:00.000Z",
             });
-            return;
-        }
-
-        if (request.method === "GET" && url.pathname === "/api/v1/users/me") {
-            sendJson(
-                response,
-                200,
-                createEnvelope("Current user loaded.", user),
-            );
             return;
         }
 
@@ -219,6 +231,7 @@ async function runCli(
                 XDG_CONFIG_HOME: join(homeDir, ".config"),
                 PEAKURL_BASE_URL: baseUrl,
                 PEAKURL_API_KEY: VALID_TOKEN,
+                PEAKURL_DISABLE_UPDATE_CHECK: "1",
                 ...extraEnv,
             },
             stdio: ["ignore", "pipe", "pipe"],
@@ -329,5 +342,55 @@ describe("peakurl CLI", () => {
 
         assert.equal(parsed.success, true);
         assert.equal(parsed.data.username, "peak");
+    });
+
+    it("shows an update notice for interactive commands when a newer version exists", async () => {
+        const result = await runCli(["whoami"], {
+            PEAKURL_DISABLE_UPDATE_CHECK: "0",
+            PEAKURL_FORCE_UPDATE_NOTICE: "1",
+            PEAKURL_NPM_REGISTRY_URL: `${baseUrl}/npm-registry`,
+        });
+
+        assert.equal(result.code, 0);
+        assert.match(result.stderr, /Update Available/);
+        assert.match(result.stderr, /peakurl 0\.1\.0 -> 0\.2\.0/);
+        assert.match(result.stderr, /Run: npm install -g peakurl@latest/);
+    });
+
+    it("checks for updates as json without installing", async () => {
+        const result = await runCli(["update", "--check", "--json"], {
+            PEAKURL_NPM_REGISTRY_URL: `${baseUrl}/npm-registry`,
+        });
+
+        assert.equal(result.code, 0);
+
+        const parsed = JSON.parse(result.stdout) as {
+            success: boolean;
+            data: {
+                currentVersion: string;
+                latestVersion: string;
+                isOutdated: boolean;
+                installCommand: string;
+                checkOnly: boolean;
+            };
+        };
+
+        assert.equal(parsed.success, true);
+        assert.equal(parsed.data.currentVersion, "0.1.0");
+        assert.equal(parsed.data.latestVersion, "0.2.0");
+        assert.equal(parsed.data.isOutdated, true);
+        assert.equal(parsed.data.checkOnly, true);
+        assert.match(parsed.data.installCommand, /peakurl@latest/);
+    });
+
+    it("prints the update command without installing anything", async () => {
+        const result = await runCli(["update"], {
+            PEAKURL_NPM_REGISTRY_URL: `${baseUrl}/npm-registry`,
+        });
+
+        assert.equal(result.code, 0);
+        assert.match(result.stdout, /Update Available/);
+        assert.match(result.stdout, /peakurl 0\.1\.0 -> 0\.2\.0/);
+        assert.match(result.stdout, /Run: npm install -g peakurl@latest/);
     });
 });

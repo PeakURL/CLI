@@ -5,6 +5,16 @@ import type { PeakUrlConfig } from "../types.js";
 import { CliError } from "../lib/errors.js";
 
 const CONFIG_FILENAME = "config.json";
+const STATE_FILENAME = "state.json";
+
+interface PeakUrlCliState {
+    update?: {
+        latestVersion?: string;
+        lastCheckedAt?: string;
+        lastNotifiedAt?: string;
+        lastNotifiedVersion?: string;
+    };
+}
 
 /**
  * Resolves the OS-appropriate config file path used by the CLI.
@@ -16,6 +26,29 @@ const CONFIG_FILENAME = "config.json";
  */
 function defaultConfigPath(): string {
     return join(envPaths("peakurl", { suffix: "" }).config, CONFIG_FILENAME);
+}
+
+/**
+ * Resolves the state file path used for non-sensitive CLI metadata.
+ *
+ * This file is separate from credentials so update-check metadata can be
+ * cached without changing the validation rules for the auth config file.
+ *
+ * @returns Absolute state file path.
+ */
+function defaultStatePath(): string {
+    return join(envPaths("peakurl", { suffix: "" }).config, STATE_FILENAME);
+}
+
+/**
+ * Ensures the parent directory exists before writing a config or state file.
+ *
+ * @param filePath Absolute file path whose parent directory should exist.
+ */
+async function ensureParentDirectory(filePath: string): Promise<string> {
+    const directory = dirname(filePath);
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    return directory;
 }
 
 /**
@@ -95,11 +128,9 @@ export class ConfigStore {
      * @param config Normalized credential set to write.
      */
     async save(config: PeakUrlConfig): Promise<void> {
-        const directory = dirname(this.filePath);
-
         // Create the config directory first so both the JSON file and its
         // parent directory can be permission-hardened for local credentials.
-        await mkdir(directory, { recursive: true, mode: 0o700 });
+        const directory = await ensureParentDirectory(this.filePath);
         await writeFile(this.filePath, `${JSON.stringify(config, null, 2)}\n`, {
             mode: 0o600,
         });
@@ -110,5 +141,54 @@ export class ConfigStore {
         } catch {
             // Ignore chmod errors on platforms that do not support POSIX-style modes.
         }
+    }
+}
+
+/**
+ * Reads and writes low-risk CLI state such as cached update-check metadata.
+ *
+ * The state file is intentionally tolerant of corruption or missing keys
+ * because it should never block normal CLI operation.
+ */
+export class StateStore {
+    readonly filePath: string;
+
+    /**
+     * Creates a state store bound to one on-disk file.
+     *
+     * @param filePath Optional override used by tests or advanced callers.
+     */
+    constructor(filePath = defaultStatePath()) {
+        this.filePath = filePath;
+    }
+
+    /**
+     * Loads cached state from disk.
+     *
+     * Missing or invalid files are treated as empty state because the CLI can
+     * always recompute update metadata on the next successful network check.
+     *
+     * @returns Parsed state object or an empty object.
+     */
+    async load(): Promise<PeakUrlCliState> {
+        try {
+            const content = await readFile(this.filePath, "utf8");
+            const parsed = JSON.parse(content) as PeakUrlCliState | null;
+            return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+            return {};
+        }
+    }
+
+    /**
+     * Persists cached state to disk.
+     *
+     * @param state State payload to save.
+     */
+    async save(state: PeakUrlCliState): Promise<void> {
+        await ensureParentDirectory(this.filePath);
+        await writeFile(this.filePath, `${JSON.stringify(state, null, 2)}\n`, {
+            mode: 0o600,
+        });
     }
 }

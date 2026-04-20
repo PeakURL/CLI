@@ -7,8 +7,10 @@ import { deleteCommand } from "./commands/delete.js";
 import { getCommand } from "./commands/get.js";
 import { listCommand } from "./commands/list.js";
 import { loginCommand } from "./commands/login.js";
+import { updateCommand } from "./commands/update.js";
 import { whoamiCommand } from "./commands/whoami.js";
 import { toCliError } from "./lib/errors.js";
+import { maybeShowUpdateNotice } from "./lib/update.js";
 import { writeStderr } from "./lib/output.js";
 
 /**
@@ -52,13 +54,14 @@ async function readVersion(): Promise<string> {
  */
 async function main(): Promise<void> {
     const program = new Command();
+    const version = await readVersion();
 
     // Keep command registration centralized here so the shipped CLI surface is
     // easy to audit against the backend routes and release notes.
     program
         .name("peakurl")
         .description("PeakURL command-line interface")
-        .version(await readVersion())
+        .version(version)
         .showHelpAfterError()
         .showSuggestionAfterError()
         .addHelpText(
@@ -69,10 +72,26 @@ Examples:
   peakurl whoami --json
   peakurl create https://example.com --alias example
   peakurl list --limit 10
+  peakurl update --check
   peakurl get example
   peakurl delete example --quiet`,
         )
         .exitOverride();
+
+    // Update checks run before command actions so users get one compact notice
+    // without every command needing to repeat the same version-check logic.
+    program.hook("preAction", async (_command, actionCommand) => {
+        const options = actionCommand.optsWithGlobals() as
+            | { json?: boolean; quiet?: boolean }
+            | undefined;
+
+        await maybeShowUpdateNotice({
+            currentVersion: version,
+            commandName: actionCommand.name(),
+            options,
+            env: process.env,
+        });
+    });
 
     program
         .command("login")
@@ -143,6 +162,19 @@ Examples:
         .option("--json", "Print machine-readable output")
         .option("--quiet", "Suppress success output")
         .action(deleteCommand);
+
+    program
+        .command("update")
+        .description(
+            "Check for a newer CLI version and print the npm command to install it.",
+        )
+        .option(
+            "--check",
+            "Alias for checking update status without changing anything",
+        )
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Print minimal output")
+        .action((options) => updateCommand(options, version));
 
     try {
         await program.parseAsync(process.argv);
