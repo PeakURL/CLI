@@ -34,6 +34,7 @@ peakurl create \
 
 peakurl list
 peakurl whoami
+peakurl logout
 ```
 
 ## Authentication
@@ -43,6 +44,7 @@ The CLI uses PeakURL bearer API keys and validates them against `GET /api/v1/use
 - `--base-url` accepts either the site root, such as `https://peakurl.org`, or the API base URL, such as `https://peakurl.org/api/v1`
 - API keys are opaque 48-character hex tokens
 - Credentials are stored in the standard per-user config location for `peakurl`
+- `peakurl logout` removes the saved config file, but shell environment variables still override auth if they are set
 
 For CI or automation, you can also authenticate with environment variables:
 
@@ -57,6 +59,7 @@ export PEAKURL_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef
 | ------------------------------ | ---------------------------------------------------------- |
 | `peakurl login`                | Validate and save your PeakURL credentials.                |
 | `peakurl whoami`               | Show the current authenticated account.                    |
+| `peakurl logout`               | Remove saved local CLI credentials.                        |
 | `peakurl create <url>`         | Create a new short link.                                   |
 | `peakurl list`                 | List links in your account.                                |
 | `peakurl get <id-or-alias>`    | Fetch a single link by ID or alias.                        |
@@ -86,6 +89,12 @@ Inspect a link:
 
 ```bash
 peakurl get example
+```
+
+Log out from saved local credentials:
+
+```bash
+peakurl logout
 ```
 
 Delete a link:
