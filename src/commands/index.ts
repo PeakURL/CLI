@@ -1,8 +1,14 @@
-export { createCommand } from "./create.js";
-export { deleteCommand } from "./delete.js";
-export { getCommand } from "./get.js";
-export { listCommand } from "./list.js";
-export { loginCommand } from "./login.js";
-export { logoutCommand } from "./logout.js";
-export { updateCommand } from "./update.js";
-export { whoamiCommand } from "./whoami.js";
+export {
+    createLink,
+    deleteLink,
+    exportLinks,
+    getLink,
+    importLinks,
+    listLinks,
+} from "./links.js";
+export { login } from "./login.js";
+export { logout } from "./logout.js";
+export { status } from "./status.js";
+export { checkUpdate } from "./update.js";
+export * from "./webhooks.js";
+export { whoami } from "./whoami.js";

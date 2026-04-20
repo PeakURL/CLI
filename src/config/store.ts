@@ -54,9 +54,9 @@ async function ensureParentDir(filePath: string): Promise<string> {
 /**
  * Reads and writes the per-user CLI config file.
  *
- * The config currently stores the normalized base URL plus the API key. The
- * file is kept in one place so auth resolution is predictable in both local
- * terminal use and automated scripts.
+ * The config stores the explicit API base URL plus the API key. The file is
+ * kept in one place so auth resolution is predictable in both local terminal
+ * use and automated scripts.
  */
 export class ConfigStore {
     readonly filePath: string;
@@ -82,17 +82,25 @@ export class ConfigStore {
     async load(): Promise<AuthConfig | null> {
         try {
             const content = await readFile(this.filePath, "utf8");
-            const parsed = JSON.parse(content) as Partial<AuthConfig>;
+            const parsed = JSON.parse(content) as
+                | (Partial<AuthConfig> & { baseUrl?: string })
+                | null;
+            const apiBaseUrl =
+                typeof parsed?.apiBaseUrl === "string"
+                    ? parsed.apiBaseUrl
+                    : typeof parsed?.baseUrl === "string"
+                      ? parsed.baseUrl
+                      : undefined;
 
             if (
-                typeof parsed.baseUrl !== "string" ||
-                typeof parsed.apiKey !== "string"
+                typeof apiBaseUrl !== "string" ||
+                typeof parsed?.apiKey !== "string"
             ) {
                 throw new CliError(`Invalid config file: ${this.filePath}`);
             }
 
             return {
-                baseUrl: parsed.baseUrl,
+                apiBaseUrl,
                 apiKey: parsed.apiKey,
             };
         } catch (error) {

@@ -1,4 +1,14 @@
-import type { ApiResponse, AuthConfig, Link, User } from "../types.js";
+import type {
+    ApiResponse,
+    AuthConfig,
+    CreateWebhookPayload,
+    Link,
+    LinkImportData,
+    LinkInput,
+    SystemStatus,
+    User,
+    Webhook,
+} from "../types.js";
 import { CliError } from "../lib/errors.js";
 import { buildApiUrl } from "../lib/url.js";
 
@@ -37,16 +47,16 @@ function isApiResponse(value: unknown): value is ApiResponse {
 /**
  * Builds a user-facing network failure message without exposing credentials.
  *
- * @param baseUrl Normalized PeakURL base URL.
+ * @param apiBaseUrl Explicit PeakURL API base URL.
  * @param error Underlying fetch error.
  * @returns Human-readable network error message.
  */
-function networkError(baseUrl: string, error: unknown): string {
+function networkError(apiBaseUrl: string, error: unknown): string {
     if (error instanceof Error && error.message) {
-        return `Could not reach PeakURL at ${baseUrl}. ${error.message}`;
+        return `Could not reach PeakURL at ${apiBaseUrl}. ${error.message}`;
     }
 
-    return `Could not reach PeakURL at ${baseUrl}.`;
+    return `Could not reach PeakURL at ${apiBaseUrl}.`;
 }
 
 /**
@@ -59,7 +69,7 @@ export class ApiClient {
     /**
      * Creates a client bound to one resolved credential set.
      *
-     * @param config Normalized base URL plus bearer API key.
+     * @param config Explicit API base URL plus bearer API key.
      */
     constructor(private readonly config: AuthConfig) {}
 
@@ -76,12 +86,21 @@ export class ApiClient {
     }
 
     /**
+     * Loads the current system status snapshot for the authenticated site.
+     *
+     * @returns API response envelope containing system status sections.
+     */
+    getStatus(): Promise<ApiResponse<SystemStatus>> {
+        return this.request<SystemStatus>("GET", "system/status");
+    }
+
+    /**
      * Creates a short URL.
      *
      * @param payload Request body accepted by `POST /api/v1/urls`.
      * @returns API response envelope containing the created link.
      */
-    createUrl(payload: Record<string, string>): Promise<ApiResponse<Link>> {
+    createUrl(payload: LinkInput): Promise<ApiResponse<Link>> {
         return this.request<Link>("POST", "urls", payload);
     }
 
@@ -96,6 +115,33 @@ export class ApiClient {
      */
     listUrls(query?: QueryParams): Promise<ApiResponse<ListData | Link[]>> {
         return this.request<ListData | Link[]>("GET", "urls", undefined, query);
+    }
+
+    /**
+     * Exports the full accessible link dataset for the authenticated user.
+     *
+     * @param query Optional search and sort values.
+     * @returns API response envelope containing the full export payload.
+     */
+    exportUrls(query?: QueryParams): Promise<ApiResponse<ListData | Link[]>> {
+        return this.request<ListData | Link[]>(
+            "GET",
+            "urls/export",
+            undefined,
+            query,
+        );
+    }
+
+    /**
+     * Imports multiple short links in one bulk request.
+     *
+     * @param payload Request body accepted by `POST /api/v1/urls/bulk`.
+     * @returns API response envelope containing created rows plus row errors.
+     */
+    importUrls(payload: {
+        urls: LinkInput[];
+    }): Promise<ApiResponse<LinkImportData>> {
+        return this.request<LinkImportData>("POST", "urls/bulk", payload);
     }
 
     /**
@@ -130,6 +176,40 @@ export class ApiClient {
     }
 
     /**
+     * Lists outbound webhooks for the authenticated user.
+     *
+     * @returns API response envelope containing webhook rows.
+     */
+    listWebhooks(): Promise<ApiResponse<Webhook[]>> {
+        return this.request<Webhook[]>("GET", "webhooks");
+    }
+
+    /**
+     * Creates one outbound webhook subscription.
+     *
+     * @param payload Request body accepted by `POST /api/v1/webhooks`.
+     * @returns API response envelope containing the created webhook.
+     */
+    createWebhook(
+        payload: CreateWebhookPayload,
+    ): Promise<ApiResponse<Webhook>> {
+        return this.request<Webhook>("POST", "webhooks", payload);
+    }
+
+    /**
+     * Deletes one webhook by its stable row ID.
+     *
+     * @param id Webhook identifier returned by the list/create endpoints.
+     * @returns API response envelope containing the deletion result.
+     */
+    deleteWebhook(id: string): Promise<ApiResponse<unknown>> {
+        return this.request<unknown>(
+            "DELETE",
+            `webhooks/${encodeURIComponent(id)}`,
+        );
+    }
+
+    /**
      * Performs one authenticated API request and normalizes the response.
      *
      * @param method HTTP method to send.
@@ -142,10 +222,10 @@ export class ApiClient {
     private async request<T>(
         method: string,
         path: string,
-        body?: Record<string, unknown>,
+        body?: unknown,
         query?: QueryParams,
     ): Promise<ApiResponse<T>> {
-        const url = buildApiUrl(this.config.baseUrl, path, query);
+        const url = buildApiUrl(this.config.apiBaseUrl, path, query);
 
         let response: Response;
 
@@ -160,7 +240,7 @@ export class ApiClient {
                 body: body ? JSON.stringify(body) : undefined,
             });
         } catch (error) {
-            throw new CliError(networkError(this.config.baseUrl, error), 1, {
+            throw new CliError(networkError(this.config.apiBaseUrl, error), 1, {
                 cause: error instanceof Error ? error : undefined,
             });
         }

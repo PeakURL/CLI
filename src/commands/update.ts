@@ -16,7 +16,7 @@ interface UpdateOptions extends OutputOptions {
  * @param options Parsed command flags.
  * @param currentVersion Current CLI version from package metadata.
  */
-export async function updateCommand(
+export async function checkUpdate(
     options: UpdateOptions,
     currentVersion: string,
 ): Promise<void> {

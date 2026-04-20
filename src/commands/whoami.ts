@@ -11,7 +11,7 @@ import type { OutputOptions } from "../types.js";
 /**
  * Prints the current authenticated user.
  */
-export async function whoamiCommand(options: OutputOptions): Promise<void> {
+export async function whoami(options: OutputOptions): Promise<void> {
     const config = await getAuthConfig(process.env);
     const response = await new ApiClient(config).whoami();
 

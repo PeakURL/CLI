@@ -9,14 +9,14 @@ function hasEnvConfig(env: NodeJS.ProcessEnv): boolean {
 /**
  * Removes saved CLI credentials from the local config store.
  */
-export async function logoutCommand(options: OutputOptions): Promise<void> {
+export async function logout(options: OutputOptions): Promise<void> {
     const store = new ConfigStore();
     const saved = await store.load();
     const removed = await store.clear();
     const envConfig = hasEnvConfig(process.env);
     const message =
-        removed && saved?.baseUrl
-            ? `Logged out. Removed saved credentials for ${saved.baseUrl}.`
+        removed && saved?.apiBaseUrl
+            ? `Logged out. Removed saved credentials for ${saved.apiBaseUrl}.`
             : removed
               ? "Logged out. Removed saved PeakURL credentials."
               : "Already logged out. No saved PeakURL credentials were found.";
@@ -26,7 +26,7 @@ export async function logoutCommand(options: OutputOptions): Promise<void> {
         message,
         data: {
             removed,
-            baseUrl: saved?.baseUrl,
+            apiBaseUrl: saved?.apiBaseUrl,
             envCredentialsActive: envConfig,
         },
         timestamp: new Date().toISOString(),

@@ -17,7 +17,7 @@ interface LoginOptions extends OutputOptions {
 /**
  * Verifies credentials with PeakURL and stores them in the local config file.
  */
-export async function loginCommand(options: LoginOptions): Promise<void> {
+export async function login(options: LoginOptions): Promise<void> {
     const credentials = getLoginConfig(options, process.env);
     const client = new ApiClient(credentials);
     const response = await client.whoami();
@@ -26,9 +26,9 @@ export async function loginCommand(options: LoginOptions): Promise<void> {
 
     const responseBody = {
         success: true,
-        message: `Saved credentials for ${credentials.baseUrl}.`,
+        message: `Saved credentials for ${credentials.apiBaseUrl}.`,
         data: {
-            baseUrl: credentials.baseUrl,
+            apiBaseUrl: credentials.apiBaseUrl,
             user: response.data,
         },
         timestamp: response.timestamp,
@@ -43,7 +43,7 @@ export async function loginCommand(options: LoginOptions): Promise<void> {
         return;
     }
 
-    writeStdout(`Saved credentials for ${credentials.baseUrl}`);
+    writeStdout(`Saved credentials for ${credentials.apiBaseUrl}`);
     writeStdout(`Authenticated as ${userLabel(response.data)}`);
     writeStdout(userTable(response.data));
 }

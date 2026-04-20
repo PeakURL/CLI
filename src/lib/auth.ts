@@ -1,7 +1,7 @@
 import type { AuthConfig } from "../types.js";
 import { ConfigStore } from "../config/index.js";
 import { CliError } from "./errors.js";
-import { normalizeBaseUrl } from "./url.js";
+import { getApiBaseUrl } from "./url.js";
 
 export const AUTH_REQUIRED_MESSAGE = "PeakURL credentials are not configured.";
 const EXAMPLE_BASE_URL = "https://example.com/api/v1";
@@ -44,24 +44,24 @@ export function authRows(commandName?: string): string[][] {
  *
  * @param input Parsed CLI options from Commander.
  * @param env Process environment snapshot.
- * @returns Normalized login credential set.
+ * @returns Validated login credential set.
  * @throws {CliError} When either required credential is missing.
  */
 export function getLoginConfig(
     input: LoginInput,
     env: NodeJS.ProcessEnv,
 ): AuthConfig {
-    const baseUrl = input.baseUrl?.trim() || env.PEAKURL_BASE_URL?.trim();
+    const apiBaseUrl = input.baseUrl?.trim() || env.PEAKURL_BASE_URL?.trim();
     const apiKey = input.apiKey?.trim() || env.PEAKURL_API_KEY?.trim();
 
-    if (!baseUrl || !apiKey) {
+    if (!apiBaseUrl || !apiKey) {
         throw new CliError(
             "Missing credentials. Provide --base-url and --api-key, or set PEAKURL_BASE_URL and PEAKURL_API_KEY.",
         );
     }
 
     return {
-        baseUrl: normalizeBaseUrl(baseUrl),
+        apiBaseUrl: getApiBaseUrl(apiBaseUrl),
         apiKey,
     };
 }
@@ -85,17 +85,17 @@ export async function getAuthConfig(
 
     // CI and automation should be able to override the local config file
     // without changing what is stored on disk for the interactive user.
-    const baseUrl = env.PEAKURL_BASE_URL?.trim() || saved?.baseUrl;
+    const apiBaseUrl = env.PEAKURL_BASE_URL?.trim() || saved?.apiBaseUrl;
     const apiKey = env.PEAKURL_API_KEY?.trim() || saved?.apiKey;
 
-    if (!baseUrl || !apiKey) {
+    if (!apiBaseUrl || !apiKey) {
         throw new CliError(AUTH_REQUIRED_MESSAGE, 1, {
             kind: "auth_required",
         });
     }
 
     return {
-        baseUrl: normalizeBaseUrl(baseUrl),
+        apiBaseUrl: getApiBaseUrl(apiBaseUrl),
         apiKey,
     };
 }
