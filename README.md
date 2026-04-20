@@ -1,12 +1,12 @@
-# PeakURL CLI - Command-line Interface
+# PeakURL CLI
 
-`peakurl` is the official command-line interface for PeakURL.
+The official command-line interface for PeakURL.
 
-It gives you a fast way to create, inspect, list, and remove short links from the terminal while keeping default output readable for humans and optional `--json` output friendly for scripts.
+Use `peakurl` to create short links, inspect existing links, and manage your PeakURL account from the terminal.
 
 ## Install
 
-Requirements: Node.js 20 or later.
+Node.js 20 or later is required.
 
 ```bash
 npm install -g peakurl
@@ -14,22 +14,35 @@ npm install -g peakurl
 
 ## Quick Start
 
+Sign in with your PeakURL API key:
+
 ```bash
-peakurl login --base-url https://peakurl.org --api-key 0123456789abcdef0123456789abcdef0123456789abcdef
-peakurl create https://example.com/articles/launch --alias launch --title "Launch Post"
+peakurl login \
+    --base-url https://peakurl.org \
+    --api-key 0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+Create and review a short link:
+
+```bash
+peakurl create \
+    https://example.com/articles/launch \
+    --alias launch \
+    --title "Launch Post"
+
 peakurl list
 peakurl whoami
 ```
 
 ## Authentication
 
-The CLI uses PeakURL bearer API keys and validates them with `GET /api/v1/users/me` before storing them.
+The CLI uses PeakURL bearer API keys and validates them against `GET /api/v1/users/me` before saving credentials.
 
-- `--base-url` accepts either the site root such as `https://peakurl.org` or the API base URL such as `https://peakurl.org/api/v1`
+- `--base-url` accepts either the site root, such as `https://peakurl.org`, or the API base URL, such as `https://peakurl.org/api/v1`
 - API keys are opaque 48-character hex tokens
-- credentials are stored in the standard per-user config location for `peakurl`
+- Credentials are stored in the standard per-user config location for `peakurl`
 
-For CI and automation, you can also use environment variables:
+For CI or automation, you can also authenticate with environment variables:
 
 ```bash
 export PEAKURL_BASE_URL=https://peakurl.org
@@ -38,32 +51,33 @@ export PEAKURL_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef
 
 ## Commands
 
-| Command                        | Description                                 |
-| ------------------------------ | ------------------------------------------- |
-| `peakurl login`                | Validate and save your PeakURL credentials. |
-| `peakurl whoami`               | Show the current authenticated account.     |
-| `peakurl create <url>`         | Create a new short link.                    |
-| `peakurl list`                 | List links in your account.                 |
-| `peakurl get <id-or-alias>`    | Fetch a single link by ID or alias.         |
-| `peakurl delete <id-or-alias>` | Delete a link by ID or alias.               |
-
-## Common Flags
-
-- `--json` prints machine-readable JSON output
-- `--quiet` minimizes output for scripts
+| Command                        | Description                                                |
+| ------------------------------ | ---------------------------------------------------------- |
+| `peakurl login`                | Validate and save your PeakURL credentials.                |
+| `peakurl whoami`               | Show the current authenticated account.                    |
+| `peakurl create <url>`         | Create a new short link.                                   |
+| `peakurl list`                 | List links in your account.                                |
+| `peakurl get <id-or-alias>`    | Fetch a single link by ID or alias.                        |
+| `peakurl delete <id-or-alias>` | Delete a link by ID or alias.                              |
+| `peakurl update`               | Show the latest available CLI version and install command. |
 
 ## Examples
 
 Create a short link:
 
 ```bash
-peakurl create https://example.com --alias example --title "Example"
+peakurl create \
+    https://example.com \
+    --alias example \
+    --title "Example"
 ```
 
 List links as JSON:
 
 ```bash
-peakurl list --limit 10 --json
+peakurl list \
+    --limit 10 \
+    --json
 ```
 
 Inspect a link:
@@ -79,6 +93,36 @@ peakurl delete example
 ```
 
 When `delete` receives an alias or short code, the CLI resolves it to the underlying PeakURL row ID before deleting it.
+
+Check the latest available CLI version:
+
+```bash
+peakurl update --check
+```
+
+Show the recommended install command:
+
+```bash
+peakurl update
+```
+
+Install the latest version manually:
+
+```bash
+npm install -g peakurl@latest
+```
+
+Disable update notices in the current shell:
+
+```bash
+export PEAKURL_DISABLE_UPDATE_CHECK=1
+```
+
+## Output
+
+- Human-readable output is the default
+- `--json` prints machine-readable JSON where supported
+- `--quiet` minimizes output for scripts
 
 ## Links
 
