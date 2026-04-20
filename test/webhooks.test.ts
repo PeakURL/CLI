@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { escapeForRegExp, runCli } from "./cli-test-harness.js";
+import { escapeForRegExp, runCli } from "./harness.js";
 
 describe("PeakURL CLI Webhooks", () => {
     it("lists webhooks in human-readable output", async () => {

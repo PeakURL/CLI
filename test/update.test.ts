@@ -6,7 +6,7 @@ import {
     getLatestCliVersion,
     mockSiteUrl,
     runCli,
-} from "./cli-test-harness.js";
+} from "./harness.js";
 
 describe("PeakURL CLI Update Checks", () => {
     it("shows an update notice when a newer release is available", async () => {

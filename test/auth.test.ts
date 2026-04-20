@@ -6,7 +6,7 @@ import {
     mockApiBaseUrl,
     runCli,
     VALID_TOKEN,
-} from "./cli-test-harness.js";
+} from "./harness.js";
 
 describe("PeakURL CLI Authentication", () => {
     it("prints the global help output", async () => {
@@ -16,6 +16,7 @@ describe("PeakURL CLI Authentication", () => {
         assert.match(result.stdout, /PeakURL command-line interface/);
         assert.match(result.stdout, /login/);
         assert.match(result.stdout, /logout/);
+        assert.match(result.stdout, /status/);
         assert.match(result.stdout, /create/);
     });
 
