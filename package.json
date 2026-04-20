@@ -1,12 +1,25 @@
 {
     "name": "peakurl",
     "version": "0.1.0",
-    "description": "PeakURL command-line interface",
+    "description": "Official CLI for creating, listing, and managing PeakURL short links from the terminal",
     "homepage": "https://peakurl.org",
+    "bugs": {
+        "url": "https://github.com/PeakURL/PeakURL-CLI/issues"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/PeakURL/PeakURL-CLI.git"
     },
+    "keywords": [
+        "peakurl",
+        "url shortener",
+        "short links",
+        "link shortening",
+        "cli",
+        "command line",
+        "terminal",
+        "productivity"
+    ],
     "type": "module",
     "bin": {
         "peakurl": "bin/peakurl.js"
@@ -22,7 +35,7 @@
         "dev": "tsx src/index.ts",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "test": "tsx --test test/*.test.ts",
+        "test": "npm run build && tsx --test test/*.test.ts",
         "typecheck": "tsc --noEmit",
         "prepare": "npm run build"
     },
