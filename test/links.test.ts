@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { formatLinksTable } from "../src/lib/links.js";
+import { formatLinksTable } from "../src/lib/index.js";
 
 describe("Link Table Formatting", () => {
     it("formats boxed table output for human-readable link lists", () => {

@@ -1,7 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { CliError } from "../src/lib/errors.js";
-import { normalizeBaseUrl, normalizeDestinationUrl } from "../src/lib/url.js";
+import {
+    CliError,
+    normalizeBaseUrl,
+    normalizeDestinationUrl,
+} from "../src/lib/index.js";
 
 describe("URL Validation", () => {
     it("normalizes PeakURL API roots back to the install root", () => {

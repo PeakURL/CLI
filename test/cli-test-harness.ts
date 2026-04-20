@@ -244,11 +244,14 @@ after(async () => {
 export async function runCli(
     args: string[],
     extraEnv: Record<string, string> = {},
+    homeDirOverride?: string,
 ): Promise<{ code: number; stdout: string; stderr: string; homeDir: string }> {
-    const homeDir = join(
-        tmpdir(),
-        `peakurl-cli-test-${Math.random().toString(36).slice(2)}`,
-    );
+    const homeDir =
+        homeDirOverride ||
+        join(
+            tmpdir(),
+            `peakurl-cli-test-${Math.random().toString(36).slice(2)}`,
+        );
     await mkdir(homeDir, { recursive: true });
 
     return await new Promise((resolve, reject) => {
