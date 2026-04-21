@@ -1,4 +1,4 @@
-name: PeakURL CLI
+name: CLI
 
 on:
     push:
