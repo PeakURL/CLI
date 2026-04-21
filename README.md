@@ -213,4 +213,4 @@ export PEAKURL_DISABLE_UPDATE_CHECK=1
 - CLI docs: <https://peakurl.org/docs/cli>
 - API docs: <https://peakurl.org/docs/api>
 - npm package: <https://www.npmjs.com/package/peakurl>
-- Issues: <https://github.com/PeakURL/PeakURL-CLI/issues>
+- Issues: <https://github.com/PeakURL/CLI/issues>
