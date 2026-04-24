@@ -64,6 +64,7 @@ export PEAKURL_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef
 | `peakurl whoami`               | Show the current authenticated account.                     |
 | `peakurl logout`               | Remove saved local CLI credentials.                         |
 | `peakurl status`               | Show the current system status snapshot for the site.       |
+| `peakurl core download`        | Download and extract the latest PeakURL core package.       |
 | `peakurl create <url>`         | Create a new short link.                                    |
 | `peakurl import <file>`        | Import links from a local CSV, JSON, or XML file.           |
 | `peakurl export`               | Export accessible links as CSV, JSON, or XML.               |
@@ -118,6 +119,18 @@ If you need the raw payload:
 
 ```bash
 peakurl status --json
+```
+
+Download and extract the latest PeakURL core package into the current directory:
+
+```bash
+peakurl core download
+```
+
+If the current directory already contains conflicting files, re-run with:
+
+```bash
+peakurl core download --force
 ```
 
 Delete a link:
