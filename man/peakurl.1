@@ -1,0 +1,363 @@
+.Dd April 24, 2026
+.Dt PEAKURL 1
+.Os
+.Sh NAME
+.Nm peakurl
+.Nd manage PeakURL short links and site operations from the terminal
+.Sh SYNOPSIS
+.Nm
+.Op Fl h | Fl -help
+.Op Fl V | Fl -version
+.Ar command
+.Op Ar options
+.Pp
+.Nm
+.Cm login
+.Fl -base-url
+.Ar url
+.Fl -api-key
+.Ar token
+.Op Fl -json
+.Op Fl -quiet
+.Pp
+.Nm
+.Cm create
+.Ar url
+.Op Fl -alias Ar alias
+.Op Fl -title Ar title
+.Op Fl -json
+.Op Fl -quiet
+.Pp
+.Nm
+.Cm list
+.Op Fl -page Ar number
+.Op Fl -limit Ar number
+.Op Fl -search Ar query
+.Op Fl -json
+.Op Fl -quiet
+.Pp
+.Nm
+.Cm core download
+.Op Fl -force
+.Op Fl -json
+.Op Fl -quiet
+.Sh DESCRIPTION
+.Nm
+is the official command-line interface for PeakURL.
+It wraps the PeakURL HTTP API for creating, listing, importing, exporting,
+and deleting short links.
+It also supports authenticated account inspection, site system status,
+outbound webhooks, CLI update checks, and public PeakURL core package
+downloads.
+.Pp
+Human-readable tables are printed by default.
+Commands that are useful in automation provide
+.Fl -json
+for machine-readable output and
+.Fl -quiet
+for compact script output.
+.Sh INSTALLATION
+.Nm
+is distributed as the
+.Sy peakurl
+npm package.
+.Bd -literal -offset indent
+npm i -g peakurl
+.Ed
+.Pp
+After installation, the executable is named
+.Nm .
+Package managers that install npm manual entries can expose this page through:
+.Bd -literal -offset indent
+man peakurl
+.Ed
+.Sh AUTHENTICATION
+Most commands require a PeakURL API key.
+Save credentials locally with:
+.Bd -literal -offset indent
+peakurl login --base-url https://example.com/api/v1 --api-key YOUR_API_KEY
+.Ed
+.Pp
+The
+.Fl -base-url
+value must be the explicit PeakURL API base URL and should normally end in
+.Pa /api/v1 .
+.Nm
+verifies credentials with
+.Sy GET /users/me
+before saving them.
+.Pp
+For non-interactive shells and CI jobs, credentials may also be provided
+through environment variables:
+.Bl -tag -width "PEAKURL_BASE_URL"
+.It Ev PEAKURL_BASE_URL
+Explicit API base URL, for example
+.Pa https://example.com/api/v1 .
+.It Ev PEAKURL_API_KEY
+Bearer API key.
+.El
+.Pp
+Environment credentials override saved credentials for the current process.
+.Sh COMMANDS
+.Bl -tag -width "webhook create"
+.It Cm login
+Validate and save PeakURL credentials.
+.Bd -literal -offset indent
+peakurl login --base-url https://example.com/api/v1 --api-key YOUR_API_KEY
+.Ed
+.It Cm whoami
+Show the current authenticated account.
+.Bd -literal -offset indent
+peakurl whoami
+.Ed
+.It Cm logout
+Remove saved local credentials.
+Environment variables, if set, still apply to the current shell.
+.Bd -literal -offset indent
+peakurl logout
+.Ed
+.It Cm status
+Show the current PeakURL system status snapshot.
+This route typically requires admin access on the PeakURL install.
+.Bd -literal -offset indent
+peakurl status
+peakurl status --json
+.Ed
+.It Cm core download
+Download the latest public PeakURL core package from
+.Pa https://peakurl.org/latest.zip ,
+verify the published SHA-256 checksum from the update API, and extract it
+into the current directory.
+.Bd -literal -offset indent
+peakurl core download
+peakurl core download --force
+.Ed
+.It Cm create Ar url
+Create a short link for a destination URL.
+.Bd -literal -offset indent
+peakurl create https://example.com/docs --alias docs
+peakurl create https://example.com/launch --title "Launch Page"
+.Ed
+.It Cm import Ar file
+Import short links from a local CSV, JSON, or XML file.
+.Bd -literal -offset indent
+peakurl import ./links.csv
+peakurl import ./links.xml --json
+.Ed
+.It Cm export
+Export accessible links as CSV, JSON, or XML.
+.Bd -literal -offset indent
+peakurl export --format csv
+peakurl export --format json --stdout
+peakurl export --format xml --output ./backups/links.xml
+.Ed
+.It Cm list
+List short links.
+.Bd -literal -offset indent
+peakurl list
+peakurl list --limit 25 --page 1
+peakurl list --search launch --json
+.Ed
+.It Cm get Ar id-or-alias
+Fetch one short link by ID, alias, or short code.
+.Bd -literal -offset indent
+peakurl get docs
+peakurl get url_123 --json
+.Ed
+.It Cm delete Ar id-or-alias
+Delete one short link by ID, alias, or short code.
+.Bd -literal -offset indent
+peakurl delete docs
+peakurl delete url_123 --quiet
+.Ed
+.It Cm webhook list
+List outbound webhook registrations.
+.Bd -literal -offset indent
+peakurl webhook list
+peakurl webhook list --json
+.Ed
+.It Cm webhook create Ar url
+Create an outbound webhook registration.
+At least one
+.Fl -event
+flag is required.
+.Bd -literal -offset indent
+peakurl webhook create https://example.com/api/webhooks/peakurl --event link.clicked
+peakurl webhook create https://example.com/api/webhooks/peakurl --event link.clicked --event link.created
+.Ed
+.It Cm webhook delete Ar id
+Delete one outbound webhook by ID.
+.Bd -literal -offset indent
+peakurl webhook delete webhook_123
+.Ed
+.It Cm webhook events
+List supported webhook event identifiers.
+.Bd -literal -offset indent
+peakurl webhook events
+.Ed
+.It Cm update
+Check for a newer CLI version and print the npm install command when an
+update is available.
+.Bd -literal -offset indent
+peakurl update
+peakurl update --check
+peakurl update --json
+.Ed
+.El
+.Sh OPTIONS
+.Ss Global Options
+.Bl -tag -width "-V, --version"
+.It Fl h , Fl -help
+Show help.
+.It Fl V , Fl -version
+Show the installed CLI version.
+.El
+.Ss Common Output Options
+.Bl -tag -width "--quiet"
+.It Fl -json
+Print machine-readable JSON where supported.
+.It Fl -quiet
+Print minimal output for scripts or suppress success output for destructive
+commands.
+.El
+.Ss Link Creation Options
+.Bl -tag -width "--utm-campaign"
+.It Fl -alias Ar alias
+Custom alias for the short link.
+.It Fl -title Ar title
+Title stored with the short link.
+.It Fl -password Ar password
+Password-protect the short link.
+.It Fl -status Ar status
+Link status, for example
+.Sy active
+or
+.Sy paused .
+.It Fl -expires-at Ar iso
+Expiration timestamp in ISO-8601 format.
+.It Fl -utm-source Ar value
+UTM source value.
+.It Fl -utm-medium Ar value
+UTM medium value.
+.It Fl -utm-campaign Ar value
+UTM campaign value.
+.It Fl -utm-term Ar value
+UTM term value.
+.It Fl -utm-content Ar value
+UTM content value.
+.El
+.Ss List Options
+.Bl -tag -width "--sort-order"
+.It Fl -page Ar number
+Page number.
+.It Fl -limit Ar number
+Page size.
+.It Fl -search Ar query
+Search term.
+.It Fl -sort-by Ar field
+Sort field.
+.It Fl -sort-order Ar order
+Sort order, for example
+.Sy asc
+or
+.Sy desc .
+.El
+.Ss Import And Export Options
+.Bl -tag -width "--format"
+.It Fl -format Ar format
+File format:
+.Sy csv ,
+.Sy json ,
+or
+.Sy xml .
+.It Fl -output Ar path
+Write exported content to a specific file.
+.It Fl -stdout
+Write raw exported content to standard output.
+.El
+.Ss Core Download Options
+.Bl -tag -width "--force"
+.It Fl -force
+Overwrite existing files when extracting the PeakURL core package.
+.El
+.Ss Webhook Options
+.Bl -tag -width "--event"
+.It Fl -event Ar event
+Webhook event identifier.
+May be passed more than once.
+Run
+.Nm
+.Cm webhook events
+to list supported values.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width "PEAKURL_DISABLE_UPDATE_CHECK"
+.It Ev PEAKURL_BASE_URL
+Explicit PeakURL API base URL.
+.It Ev PEAKURL_API_KEY
+Bearer API key.
+.It Ev PEAKURL_DISABLE_UPDATE_CHECK
+Disable automatic CLI update notices when set.
+.It Ev PEAKURL_FORCE_UPDATE_NOTICE
+Force an update notice check.
+This is primarily useful for testing.
+.El
+.Sh FILES
+.Bl -tag -width "Windows"
+.It macOS
+.Pa ~/Library/Preferences/peakurl/config.json
+.It Linux and other Unix systems
+.Pa ~/.config/peakurl/config.json
+.It Windows
+.Pa %APPDATA%\epeakurl\eConfig\econfig.json
+.El
+.Pp
+The exact location follows the standard per-user paths resolved by the
+operating system.
+.Sh EXIT STATUS
+.Bl -tag -width "2"
+.It 0
+Command completed successfully.
+.It 1
+Command failed because of validation, network, API, file-system, or package
+verification errors.
+.It 2
+Authentication is missing or rejected.
+.El
+.Sh SECURITY
+.Nm
+does not print API keys, bearer tokens, or raw authorization headers.
+Base URLs and destination URLs reject embedded credentials.
+Core package downloads are verified with the published SHA-256 checksum before
+extraction.
+The ZIP extractor rejects unsafe paths, duplicate entries, symbolic links,
+encrypted entries, and unsupported compression methods.
+.Pp
+Use
+.Nm
+.Cm logout
+to remove saved credentials from the local config store.
+Unset
+.Ev PEAKURL_BASE_URL
+and
+.Ev PEAKURL_API_KEY
+when environment credentials should no longer apply.
+.Sh EXAMPLES
+.Bd -literal -offset indent
+peakurl login --base-url https://example.com/api/v1 --api-key YOUR_API_KEY
+peakurl create https://example.com/docs --alias docs
+peakurl list --limit 10
+peakurl get docs
+peakurl export --format json --stdout
+peakurl webhook create https://example.com/api/webhooks/peakurl --event link.clicked
+peakurl core download
+.Ed
+.Sh SEE ALSO
+.Lk https://peakurl.org/docs/cli "PeakURL CLI documentation"
+.Pp
+.Lk https://peakurl.org/docs/api "PeakURL API documentation"
+.Pp
+.Lk https://www.npmjs.com/package/peakurl "peakurl npm package"
+.Sh BUGS
+Report issues at
+.Lk https://github.com/PeakURL/CLI/issues .
