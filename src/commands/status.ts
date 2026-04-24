@@ -3,6 +3,7 @@ import {
     formatStatusReport,
     getAuthConfig,
     getStatusValue,
+    successLine,
     writeJson,
     writeStdout,
 } from "../lib/index.js";
@@ -27,6 +28,6 @@ export async function status(options: OutputOptions): Promise<void> {
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(formatStatusReport(response.data));
 }

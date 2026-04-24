@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import {
     checkUpdate,
+    downloadCore,
     createWebhook,
     createLink,
     deleteLink,
@@ -21,9 +22,10 @@ import {
 } from "./commands/index.js";
 import {
     authRows,
-    formatTable,
     checkUpdates,
     ensureCliError,
+    errorLine,
+    formatTable,
     parseWebhookEvents,
     writeStderr,
 } from "./lib/index.js";
@@ -130,6 +132,7 @@ Get Started:
 
 Common Commands:
   peakurl status
+  peakurl core download
   peakurl list --limit 10
   peakurl import ./links.csv
   peakurl export --format csv
@@ -214,6 +217,32 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
             .option("--quiet", "Print only the overall health value")
             .action(status),
         ["peakurl status", "peakurl status --json", "peakurl status --quiet"],
+    );
+
+    const core = program
+        .command("core")
+        .summary("Manage PeakURL core files")
+        .helpOption("-h, --help", "Show help")
+        .description("Manage PeakURL core package downloads.");
+
+    addExamples(core, [
+        "peakurl core download",
+        "peakurl core download --force",
+    ]);
+
+    addExamples(
+        core
+            .command("download")
+            .summary("Download the core package")
+            .description(
+                "Download the latest PeakURL core package, verify its checksum, and extract it into the current directory.",
+            )
+            .helpOption("-h, --help", "Show help")
+            .option("--force", "Overwrite existing files when needed")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only the extracted path")
+            .action(downloadCore),
+        ["peakurl core download", "peakurl core download --force --json"],
     );
 
     addExamples(
@@ -443,7 +472,7 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
 
         if (cliError.kind === "auth_required") {
             const commandName = getRetryCommandName(process.argv);
-            writeStderr("Authentication required.");
+            writeStderr(errorLine("Authentication required."));
             writeStderr("PeakURL could not find credentials for this command.");
             writeStderr(
                 "Use one of the first two steps below, then run the last command.",
@@ -456,7 +485,7 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
                 ),
             );
         } else {
-            writeStderr(cliError.message);
+            writeStderr(errorLine(cliError.message));
         }
 
         process.exit(cliError.exitCode);

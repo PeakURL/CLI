@@ -26,6 +26,36 @@ export interface OutputOptions {
 }
 
 /**
+ * Shared output controls plus overwrite support for installer-style commands.
+ */
+export interface ForceOptions extends OutputOptions {
+    force?: boolean;
+}
+
+/**
+ * Release metadata returned by the PeakURL update feed.
+ */
+export interface CoreRelease {
+    version: string;
+    downloadUrl: string;
+    checksumSha256: string;
+    releasedAt?: string;
+    releaseNotesUrl?: string;
+}
+
+/**
+ * Summary returned after downloading and extracting the PeakURL core package.
+ */
+export interface CoreDownloadResult {
+    version: string;
+    path: string;
+    downloadUrl: string;
+    checksumSha256: string;
+    checksumVerified: boolean;
+    fileCount: number;
+}
+
+/**
  * File formats supported by link import and export commands.
  */
 export type LinkFileFormat = "csv" | "json" | "xml";

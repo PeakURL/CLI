@@ -1,5 +1,5 @@
 import type { User } from "../types.js";
-import { formatTable } from "./output.js";
+import { formatDetailsTable } from "./output.js";
 
 function text(value: unknown): string | undefined {
     return typeof value === "string" && value.trim() ? value.trim() : undefined;
@@ -43,5 +43,5 @@ export function userTable(user: User): string {
         return "No user fields returned.";
     }
 
-    return formatTable(["Field", "Value"], rows);
+    return formatDetailsTable(rows);
 }

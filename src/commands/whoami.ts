@@ -1,6 +1,7 @@
 import { ApiClient } from "../api/index.js";
 import {
     getAuthConfig,
+    successLine,
     userTable,
     userValue,
     writeJson,
@@ -25,6 +26,6 @@ export async function whoami(options: OutputOptions): Promise<void> {
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(userTable(response.data));
 }

@@ -8,6 +8,7 @@ import {
     getAuthConfig,
     getQuietWebhookValue,
     normalizeWebhookUrl,
+    successLine,
     WEBHOOK_EVENTS,
     writeJson,
     writeStdout,
@@ -45,7 +46,7 @@ export async function listWebhooks(options: OutputOptions): Promise<void> {
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(formatWebhooksTable(response.data ?? []));
     writeStdout(formatWebhooksSummary(response.data ?? []));
 }
@@ -88,7 +89,7 @@ export async function createWebhook(
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(formatWebhookDetails(response.data));
 
     if (response.data.secret) {
@@ -118,7 +119,7 @@ export async function deleteWebhook(
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
 }
 
 /**
@@ -146,6 +147,6 @@ export async function listWebhookEvents(options: OutputOptions): Promise<void> {
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(formatWebhookEventsTable());
 }

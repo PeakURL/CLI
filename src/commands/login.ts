@@ -2,6 +2,7 @@ import { ApiClient } from "../api/index.js";
 import { ConfigStore } from "../config/index.js";
 import {
     getLoginConfig,
+    successLine,
     userLabel,
     userTable,
     writeJson,
@@ -43,7 +44,9 @@ export async function login(options: LoginOptions): Promise<void> {
         return;
     }
 
-    writeStdout(`Saved credentials for ${credentials.apiBaseUrl}`);
+    writeStdout(
+        successLine(`Saved credentials for ${credentials.apiBaseUrl}.`),
+    );
     writeStdout(`Authenticated as ${userLabel(response.data)}`);
     writeStdout(userTable(response.data));
 }

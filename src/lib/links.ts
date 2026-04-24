@@ -1,6 +1,6 @@
 import type { Link } from "../types.js";
 import type { ListData, ListMeta } from "../api/index.js";
-import { formatTable } from "./output.js";
+import { formatDetailsTable, formatTable } from "./output.js";
 
 const LIST_KEYS = ["urls", "items", "results"] as const;
 
@@ -152,7 +152,7 @@ export function getQuietLinkValue(link: Link): string {
  * @returns Multi-line label/value block.
  */
 export function formatLinkDetails(link: Link): string {
-    const lines = [
+    const rows = [
         ["ID", getLinkId(link)],
         ["Alias", getLinkAlias(link)],
         ["Short URL", getLinkShortUrl(link)],
@@ -169,7 +169,11 @@ export function formatLinkDetails(link: Link): string {
         ["Updated", asString(link.updatedAt)],
     ].filter((entry): entry is [string, string] => Boolean(entry[1]));
 
-    return lines.map(([label, value]) => `${label}: ${value}`).join("\n");
+    if (rows.length === 0) {
+        return "No link fields returned.";
+    }
+
+    return formatDetailsTable(rows);
 }
 
 /**

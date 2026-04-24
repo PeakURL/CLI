@@ -1,5 +1,6 @@
 import {
     getUpdateStatus,
+    successLine,
     writeJson,
     writeNoticeBox,
     writeStdout,
@@ -46,7 +47,11 @@ export async function checkUpdate(
 
     if (!status.isOutdated) {
         if (!options.quiet) {
-            writeStdout(`PeakURL CLI ${status.currentVersion} is up to date.`);
+            writeStdout(
+                successLine(
+                    `PeakURL CLI ${status.currentVersion} is up to date.`,
+                ),
+            );
         }
         return;
     }

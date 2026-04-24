@@ -1,6 +1,6 @@
 import type { Webhook } from "../types.js";
 import { CliError } from "./errors.js";
-import { formatTable } from "./output.js";
+import { formatDetailsTable, formatTable } from "./output.js";
 
 /**
  * One supported webhook event shown in CLI help and tables.
@@ -177,7 +177,7 @@ export function formatWebhookDetails(webhook: Webhook): string {
         return "No webhook fields returned.";
     }
 
-    return formatTable(["Field", "Value"], rows);
+    return formatDetailsTable(rows);
 }
 
 /**

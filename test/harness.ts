@@ -1,5 +1,6 @@
 import { after, before } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,6 +10,7 @@ import {
     type IncomingMessage,
     type ServerResponse,
 } from "node:http";
+import { fileURLToPath } from "node:url";
 
 export const VALID_TOKEN = "0123456789abcdef0123456789abcdef0123456789abcdef";
 
@@ -170,6 +172,75 @@ let siteUrl = "";
 let apiBaseUrl = "";
 let cliVersion = "";
 let server: ReturnType<typeof createServer>;
+let mockReleaseArchive: ReturnType<typeof buildZip>;
+let mockReleaseChecksum = "";
+
+function buildZip(entries: Array<{ path: string; content: string }>): Buffer {
+    const fileChunks: Buffer[] = [];
+    const centralChunks: Buffer[] = [];
+    let offset = 0;
+
+    for (const entry of entries) {
+        const pathBuffer = Buffer.from(entry.path, "utf8");
+        const dataBuffer = Buffer.from(entry.content, "utf8");
+        const localHeader = Buffer.alloc(30);
+
+        localHeader.writeUInt32LE(0x04034b50, 0);
+        localHeader.writeUInt16LE(20, 4);
+        localHeader.writeUInt16LE(0x0800, 6);
+        localHeader.writeUInt16LE(0, 8);
+        localHeader.writeUInt16LE(0, 10);
+        localHeader.writeUInt16LE(0, 12);
+        localHeader.writeUInt32LE(0, 14);
+        localHeader.writeUInt32LE(dataBuffer.length, 18);
+        localHeader.writeUInt32LE(dataBuffer.length, 22);
+        localHeader.writeUInt16LE(pathBuffer.length, 26);
+        localHeader.writeUInt16LE(0, 28);
+
+        fileChunks.push(localHeader, pathBuffer, dataBuffer);
+
+        const centralHeader = Buffer.alloc(46);
+
+        centralHeader.writeUInt32LE(0x02014b50, 0);
+        centralHeader.writeUInt16LE(20, 4);
+        centralHeader.writeUInt16LE(20, 6);
+        centralHeader.writeUInt16LE(0x0800, 8);
+        centralHeader.writeUInt16LE(0, 10);
+        centralHeader.writeUInt16LE(0, 12);
+        centralHeader.writeUInt16LE(0, 14);
+        centralHeader.writeUInt32LE(0, 16);
+        centralHeader.writeUInt32LE(dataBuffer.length, 20);
+        centralHeader.writeUInt32LE(dataBuffer.length, 24);
+        centralHeader.writeUInt16LE(pathBuffer.length, 28);
+        centralHeader.writeUInt16LE(0, 30);
+        centralHeader.writeUInt16LE(0, 32);
+        centralHeader.writeUInt16LE(0, 34);
+        centralHeader.writeUInt16LE(0, 36);
+        centralHeader.writeUInt32LE(0o100644 * 0x10000, 38);
+        centralHeader.writeUInt32LE(offset, 42);
+
+        centralChunks.push(centralHeader, pathBuffer);
+        offset += localHeader.length + pathBuffer.length + dataBuffer.length;
+    }
+
+    const centralDirectory = Buffer.concat(centralChunks);
+    const endOfCentralDirectory = Buffer.alloc(22);
+
+    endOfCentralDirectory.writeUInt32LE(0x06054b50, 0);
+    endOfCentralDirectory.writeUInt16LE(0, 4);
+    endOfCentralDirectory.writeUInt16LE(0, 6);
+    endOfCentralDirectory.writeUInt16LE(entries.length, 8);
+    endOfCentralDirectory.writeUInt16LE(entries.length, 10);
+    endOfCentralDirectory.writeUInt32LE(centralDirectory.length, 12);
+    endOfCentralDirectory.writeUInt32LE(offset, 16);
+    endOfCentralDirectory.writeUInt16LE(0, 20);
+
+    return Buffer.concat([
+        ...fileChunks,
+        centralDirectory,
+        endOfCentralDirectory,
+    ]);
+}
 
 function getNextVersion(version: string): string {
     const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
@@ -270,12 +341,65 @@ before(async () => {
     ) as { version: string };
 
     cliVersion = packageJson.version;
+    mockReleaseArchive = buildZip([
+        {
+            path: "index.php",
+            content: "<?php\n// PeakURL release\n",
+        },
+        {
+            path: "app/bootstrap.php",
+            content: "<?php\nreturn 'boot';\n",
+        },
+        {
+            path: "content/index.html",
+            content: "<!-- PeakURL content -->\n",
+        },
+    ]);
+    mockReleaseChecksum = createHash("sha256")
+        .update(mockReleaseArchive)
+        .digest("hex");
 
     server = createServer(async (request, response) => {
         const url = new URL(
             request.url || "/",
             `http://${request.headers.host}`,
         );
+
+        if (request.method === "GET" && url.pathname === "/v1/update") {
+            sendJsonResponse(response, 200, {
+                version: "1.0.12",
+                downloadUrl: `${mockSiteUrl()}/releases/latest.zip`,
+                checksumSha256: mockReleaseChecksum,
+                releaseNotesUrl: "https://peakurl.org/release-notes#v1.0.12",
+                releasedAt: "2026-04-10T23:27:36Z",
+            });
+            return;
+        }
+
+        if (
+            request.method === "GET" &&
+            url.pathname === "/v1/update-bad-checksum"
+        ) {
+            sendJsonResponse(response, 200, {
+                version: "1.0.12",
+                downloadUrl: `${mockSiteUrl()}/releases/latest.zip`,
+                checksumSha256:
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                releaseNotesUrl: "https://peakurl.org/release-notes#v1.0.12",
+                releasedAt: "2026-04-10T23:27:36Z",
+            });
+            return;
+        }
+
+        if (
+            request.method === "GET" &&
+            url.pathname === "/releases/latest.zip"
+        ) {
+            response.statusCode = 200;
+            response.setHeader("content-type", "application/zip");
+            response.end(mockReleaseArchive);
+            return;
+        }
 
         if (request.method === "GET" && url.pathname === "/api/v1/users/me") {
             sendJsonResponse(
@@ -508,6 +632,10 @@ before(async () => {
 });
 
 after(async () => {
+    if (!server) {
+        return;
+    }
+
     await new Promise<void>((resolve, reject) => {
         server.close((error) => {
             if (error) {
@@ -524,6 +652,7 @@ export async function runCli(
     args: string[],
     extraEnv: Record<string, string> = {},
     homeDirOverride?: string,
+    cwdOverride?: string,
 ): Promise<{ code: number; stdout: string; stderr: string; homeDir: string }> {
     const homeDir =
         homeDirOverride ||
@@ -533,9 +662,13 @@ export async function runCli(
         );
     await mkdir(homeDir, { recursive: true });
 
+    const cliPath = fileURLToPath(
+        new URL("../bin/peakurl.js", import.meta.url),
+    );
+
     return await new Promise((resolve, reject) => {
-        const child = spawn("node", ["bin/peakurl.js", ...args], {
-            cwd: process.cwd(),
+        const child = spawn("node", [cliPath, ...args], {
+            cwd: cwdOverride || process.cwd(),
             env: {
                 ...process.env,
                 HOME: homeDir,

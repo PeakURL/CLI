@@ -12,6 +12,44 @@ export function writeStderr(message = ""): void {
     process.stderr.write(`${message}\n`);
 }
 
+function outputStream(target: "stdout" | "stderr"): NodeJS.WriteStream {
+    return target === "stdout" ? process.stdout : process.stderr;
+}
+
+function useColor(target: "stdout" | "stderr"): boolean {
+    return Boolean(outputStream(target).isTTY && !process.env.NO_COLOR);
+}
+
+/**
+ * Formats a successful status line for human-readable CLI output.
+ *
+ * @param message Message shown after the success label.
+ * @param target Output stream target used to decide color support.
+ * @returns Status line ready for stdout or stderr.
+ */
+export function successLine(
+    message: string,
+    target: "stdout" | "stderr" = "stdout",
+): string {
+    const label = useColor(target) ? "\x1b[32mSuccess\x1b[39m" : "Success";
+    return `${label}: ${message}`;
+}
+
+/**
+ * Formats an error status line for human-readable CLI output.
+ *
+ * @param message Message shown after the error label.
+ * @param target Output stream target used to decide color support.
+ * @returns Status line ready for stdout or stderr.
+ */
+export function errorLine(
+    message: string,
+    target: "stdout" | "stderr" = "stderr",
+): string {
+    const label = useColor(target) ? "\x1b[31mError\x1b[39m" : "Error";
+    return `${label}: ${message}`;
+}
+
 /**
  * Writes a boxed block to stderr for notices that should stand out in the TUI.
  *
@@ -29,7 +67,7 @@ export function writeNoticeBox(
         title.length,
         ...contentLines.map((line) => line.length),
     );
-    const stream = target === "stdout" ? process.stdout : process.stderr;
+    const stream = outputStream(target);
     const useTuiBox = stream.isTTY;
     const border = useTuiBox
         ? {
@@ -86,7 +124,7 @@ export function formatTable(
     rows: string[][],
     target: "stdout" | "stderr" = "stdout",
 ): string {
-    const stream = target === "stdout" ? process.stdout : process.stderr;
+    const stream = outputStream(target);
     const useTuiBox = stream.isTTY;
     const border = useTuiBox
         ? {
@@ -166,6 +204,20 @@ export function formatTable(
             border.bottomRight,
         ),
     ].join("\n");
+}
+
+/**
+ * Renders a professional two-column details table.
+ *
+ * @param rows Detail rows shown below the header separator.
+ * @param target Output stream target.
+ * @returns Table string ready to write as a single block.
+ */
+export function formatDetailsTable(
+    rows: string[][],
+    target: "stdout" | "stderr" = "stdout",
+): string {
+    return formatTable(["Detail", "Information"], rows, target);
 }
 
 /**

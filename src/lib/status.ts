@@ -10,7 +10,7 @@ import type {
     SystemStatus,
     SystemSummary,
 } from "../types.js";
-import { formatTable } from "./output.js";
+import { formatDetailsTable, formatTable } from "./output.js";
 
 type Row = [string, string];
 
@@ -378,7 +378,7 @@ function section(title: string, rows: Row[]): string | undefined {
         return undefined;
     }
 
-    return `${title}\n${formatTable(["Field", "Value"], rows)}`;
+    return `${title}\n${formatDetailsTable(rows)}`;
 }
 
 /**

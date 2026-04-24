@@ -1,5 +1,5 @@
 import { ConfigStore } from "../config/index.js";
-import { writeJson, writeStdout } from "../lib/index.js";
+import { successLine, writeJson, writeStdout } from "../lib/index.js";
 import type { OutputOptions } from "../types.js";
 
 function hasEnvConfig(env: NodeJS.ProcessEnv): boolean {
@@ -41,7 +41,7 @@ export async function logout(options: OutputOptions): Promise<void> {
         return;
     }
 
-    writeStdout(message);
+    writeStdout(successLine(message));
 
     if (envConfig) {
         writeStdout(

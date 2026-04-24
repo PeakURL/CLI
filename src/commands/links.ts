@@ -19,6 +19,7 @@ import {
     parseFileFormat,
     readImportRows,
     serializeLinkExport,
+    successLine,
     writeJson,
     writeStdout,
 } from "../lib/index.js";
@@ -108,7 +109,7 @@ export async function createLink(
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(formatLinkDetails(response.data));
 }
 
@@ -144,7 +145,7 @@ export async function importLinks(
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
 
     if (links.length > 0) {
         writeStdout(formatLinksTable(links));
@@ -204,7 +205,7 @@ export async function exportLinks(options: ExportOptions): Promise<void> {
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(
         `Saved ${links.length} link${links.length === 1 ? "" : "s"} to ${filePath}.`,
     );
@@ -242,7 +243,7 @@ export async function listLinks(options: ListOptions): Promise<void> {
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(formatLinksTable(links));
     writeStdout(formatListSummary(response.data, links.length));
 }
@@ -270,7 +271,7 @@ export async function getLink(
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
     writeStdout(formatLinkDetails(response.data));
 }
 
@@ -312,5 +313,5 @@ export async function deleteLink(
         return;
     }
 
-    writeStdout(response.message);
+    writeStdout(successLine(response.message));
 }

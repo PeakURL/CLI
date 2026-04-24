@@ -91,7 +91,7 @@ describe("PeakURL CLI Authentication", () => {
 
         assert.equal(result.code, 0);
         assert.match(result.stdout, /Current user loaded\./);
-        assert.match(result.stdout, /\| Field\s+\| Value\s+\|/);
+        assert.match(result.stdout, /\| Detail\s+\| Information\s+\|/);
         assert.match(result.stdout, /\| Name\s+\| Peak URL\s+\|/);
         assert.match(result.stdout, /\| Username\s+\| peak\s+\|/);
     });
