@@ -94,6 +94,7 @@ describe("PeakURL CLI Authentication", () => {
         assert.match(result.stdout, /\| Detail\s+\| Information\s+\|/);
         assert.match(result.stdout, /\| Name\s+\| Peak URL\s+\|/);
         assert.match(result.stdout, /\| Username\s+\| peak\s+\|/);
+        assert.match(result.stdout, /\| API URL\s+\| http:\/\/127\.0\.0\.1:\d+\/api\/v1\s+\|/);
     });
 
     it("logs out by removing the saved config file", async () => {

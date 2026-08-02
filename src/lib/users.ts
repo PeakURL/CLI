@@ -30,14 +30,18 @@ export function userValue(user: User): string {
 /**
  * Formats user fields for the default human-readable CLI output.
  */
-export function userTable(user: User): string {
+export function userTable(user: User, apiBaseUrl?: string): string {
     const rows = [
-        ["Name", userLabel(user)],
-        ["Username", text(user.username)],
-        ["Email", text(user.email)],
-        ["Role", text(user.role)],
         ["ID", user.id === undefined ? undefined : String(user.id)],
+        ["Role", text(user.role)],
+        ["Username", text(user.username)],
+        ["Name", userLabel(user)],
+        ["Email", text(user.email)],
     ].filter((entry): entry is [string, string] => Boolean(entry[1]));
+
+    if (apiBaseUrl) {
+        rows.push(["API URL", apiBaseUrl]);
+    }
 
     if (rows.length === 0) {
         return "No user fields returned.";

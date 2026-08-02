@@ -27,5 +27,5 @@ export async function whoami(options: OutputOptions): Promise<void> {
     }
 
     writeStdout(successLine(response.message));
-    writeStdout(userTable(response.data));
+    writeStdout(userTable(response.data, config.apiBaseUrl));
 }
