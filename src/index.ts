@@ -150,8 +150,7 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
     // without every command needing to repeat the same version-check logic.
     program.hook("preAction", async (_command, actionCommand) => {
         const options = actionCommand.optsWithGlobals() as
-            | { json?: boolean; quiet?: boolean }
-            | undefined;
+            { json?: boolean; quiet?: boolean } | undefined;
 
         await checkUpdates({
             currentVersion: version,

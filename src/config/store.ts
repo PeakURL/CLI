@@ -25,7 +25,9 @@ interface CliState {
  * @returns Absolute config file path.
  */
 function getConfigPath(): string {
-    return join(envPaths("peakurl", { suffix: "" }).config, CONFIG_FILENAME);
+    const paths = envPaths("peakurl", { suffix: "" });
+    const directory = process.platform === "darwin" ? paths.data : paths.config;
+    return join(directory, CONFIG_FILENAME);
 }
 
 /**
@@ -83,8 +85,7 @@ export class ConfigStore {
         try {
             const content = await readFile(this.filePath, "utf8");
             const parsed = JSON.parse(content) as
-                | (Partial<AuthConfig> & { baseUrl?: string })
-                | null;
+                (Partial<AuthConfig> & { baseUrl?: string }) | null;
             const apiBaseUrl =
                 typeof parsed?.apiBaseUrl === "string"
                     ? parsed.apiBaseUrl

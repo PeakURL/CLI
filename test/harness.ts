@@ -294,7 +294,7 @@ export function configPathForHome(homeDir: string): string {
             return join(
                 homeDir,
                 "Library",
-                "Preferences",
+                "Application Support",
                 "peakurl",
                 "config.json",
             );
