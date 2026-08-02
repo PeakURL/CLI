@@ -119,7 +119,7 @@ async function main(): Promise<void> {
         .description("Manage your PeakURL site from the terminal.")
         .helpOption("-h, --help", "Show help")
         .helpCommand("help [command]", "Show help for a command")
-        .version(version, "-V, --version", "Show CLI version")
+        .version(version, "-v, --version", "Show CLI version")
         .showHelpAfterError()
         .showSuggestionAfterError()
         .addHelpText(

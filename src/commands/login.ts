@@ -48,5 +48,5 @@ export async function login(options: LoginOptions): Promise<void> {
         successLine(`Saved credentials for ${credentials.apiBaseUrl}.`),
     );
     writeStdout(`Authenticated as ${userLabel(response.data)}`);
-    writeStdout(userTable(response.data));
+    writeStdout(userTable(response.data, credentials.apiBaseUrl));
 }
