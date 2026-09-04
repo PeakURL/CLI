@@ -1,6 +1,8 @@
 import type {
+    ActivityItem,
     ApiResponse,
     AuthConfig,
+    BulkDeleteResult,
     CreateWebhookPayload,
     Link,
     LinkImportData,
@@ -173,6 +175,87 @@ export class ApiClient {
             "DELETE",
             `urls/${encodeURIComponent(id)}`,
         );
+    }
+
+    /**
+     * Deletes multiple short URLs in a single bulk operation.
+     *
+     * @param ids Array of short URL IDs to delete.
+     * @returns API response envelope with deleted count.
+     */
+    deleteUrlsBulk(ids: string[]): Promise<ApiResponse<BulkDeleteResult>> {
+        return this.request<BulkDeleteResult>("DELETE", "urls/bulk", { ids });
+    }
+
+    /**
+     * Deletes all accessible short URLs for the authenticated user.
+     *
+     * @returns API response envelope with deleted count.
+     */
+    clearUrls(): Promise<ApiResponse<BulkDeleteResult>> {
+        return this.request<BulkDeleteResult>("DELETE", "urls");
+    }
+
+    /**
+     * Empties all short links currently in trash.
+     *
+     * @returns API response envelope with deleted count.
+     */
+    emptyTrash(): Promise<ApiResponse<BulkDeleteResult>> {
+        return this.request<BulkDeleteResult>("DELETE", "urls/trash");
+    }
+
+    /**
+     * Lists audit log activity entries.
+     *
+     * @param query Optional query-string parameters for pagination or filters.
+     * @returns API response envelope containing activity items and meta.
+     */
+    listActivity(
+        query?: QueryParams,
+    ): Promise<ApiResponse<ListData | ActivityItem[]>> {
+        return this.request<ListData | ActivityItem[]>(
+            "GET",
+            "analytics/activity",
+            undefined,
+            query,
+        );
+    }
+
+    /**
+     * Deletes a single audit log activity entry by its row ID.
+     *
+     * @param id Audit log row ID.
+     * @returns API response envelope confirming deletion.
+     */
+    deleteActivity(id: string): Promise<ApiResponse<unknown>> {
+        return this.request<unknown>(
+            "DELETE",
+            `analytics/activity/${encodeURIComponent(id)}`,
+        );
+    }
+
+    /**
+     * Deletes multiple audit log activity entries in bulk.
+     *
+     * @param ids Array of audit log row IDs.
+     * @returns API response envelope with deleted count.
+     */
+    deleteActivityBulk(ids: string[]): Promise<ApiResponse<BulkDeleteResult>> {
+        return this.request<BulkDeleteResult>(
+            "DELETE",
+            "analytics/activity/bulk",
+            { ids },
+        );
+    }
+
+    /**
+     * Clears all audit log activity records.
+     *
+     * @returns API response envelope confirming all logs were deleted.
+     */
+    clearActivity(): Promise<ApiResponse<BulkDeleteResult>> {
+        return this.request<BulkDeleteResult>("DELETE", "analytics/activity");
     }
 
     /**

@@ -127,7 +127,7 @@ export async function deleteWebhook(
  *
  * @param options Shared output flags parsed by Commander.
  */
-export async function listWebhookEvents(options: OutputOptions): Promise<void> {
+export function listWebhookEvents(options: OutputOptions): void {
     const response = {
         success: true,
         message: "Webhook events loaded.",

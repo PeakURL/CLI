@@ -1,4 +1,5 @@
 import type {
+    CacheInfo,
     DatabaseInfo,
     LocationInfo,
     MailInfo,
@@ -47,11 +48,7 @@ function flag(value: unknown): boolean | undefined {
     return undefined;
 }
 
-function yesNo(
-    value: unknown,
-    yes: string = "Yes",
-    no: string = "No",
-): string | undefined {
+function yesNo(value: unknown, yes = "Yes", no = "No"): string | undefined {
     const normalized = flag(value);
     if (normalized === undefined) {
         return undefined;
@@ -143,7 +140,7 @@ function row(label: string, value: unknown, width?: number): Row | null {
     return [label, wrapText(normalized, width)];
 }
 
-function rows(values: Array<Row | null>): Row[] {
+function rows(values: (Row | null)[]): Row[] {
     return values.filter((value): value is Row => Boolean(value));
 }
 
@@ -342,6 +339,55 @@ function locationRows(location: LocationInfo | null | undefined): Row[] {
     ]);
 }
 
+function cacheRows(cache: CacheInfo | null | undefined): Row[] {
+    if (!cache) {
+        return [];
+    }
+
+    const redisEndpoint =
+        cache.redis?.available || cache.redis?.configured
+            ? `${text(cache.redis.host) ?? "127.0.0.1"}:${formatCount(cache.redis.port) ?? "6379"}`
+            : undefined;
+
+    const redisStatus = cache.redis?.available
+        ? cache.redis.serverVersion
+            ? `Connected (v${cache.redis.serverVersion})`
+            : "Connected"
+        : cache.redis?.configured
+          ? "Configured, unavailable"
+          : undefined;
+
+    const apcuStatus = cache.apcu?.available
+        ? "Available"
+        : cache.apcu?.extensionLoaded
+          ? "Loaded, disabled"
+          : cache.apcu !== undefined && cache.apcu !== null
+            ? "Missing"
+            : undefined;
+
+    return rows([
+        row("Status", formatState(cache.status)),
+        row("Enabled", yesNo(cache.enabled, "Enabled", "Disabled")),
+        row("Active driver", text(cache.activeDriver)),
+        row("Configured driver", text(cache.configuredDriver)),
+        row("Cache size", formatSize(cache.sizeBytes)),
+        row(
+            cache.activeDriver === "redis" || cache.activeDriver === "apcu"
+                ? "Cached items"
+                : "Cached files",
+            formatCount(cache.fileCount),
+        ),
+        row("Default TTL", formatSeconds(cache.defaultTtl)),
+        row("Negative TTL", formatSeconds(cache.negativeTtl)),
+        row("Cache directory", text(cache.path), 60),
+        row("Directory exists", yesNo(cache.directoryExists)),
+        row("Directory writable", yesNo(cache.writable)),
+        row("Redis server", redisEndpoint),
+        row("Redis status", redisStatus),
+        row("APCu extension", apcuStatus),
+    ]);
+}
+
 function dataRows(data: SiteCounts | null | undefined): Row[] {
     if (!data) {
         return [];
@@ -408,6 +454,7 @@ export function formatStatusReport(status: SystemStatus): string {
         section("Storage", storageRows(status.storage)),
         section("Mail", mailRows(status.mail)),
         section("Location", locationRows(status.location)),
+        section("Cache", cacheRows(status.cache)),
         section("Data", dataRows(status.data)),
     ].filter((value): value is string => Boolean(value));
 

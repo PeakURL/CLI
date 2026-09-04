@@ -284,6 +284,58 @@ export interface SiteCounts {
 }
 
 /**
+ * Redis cache driver status returned by the status endpoint.
+ */
+export interface CacheRedisInfo {
+    configured?: boolean | null;
+    host?: string | null;
+    port?: number | string | null;
+    available?: boolean | null;
+    serverVersion?: string | null;
+}
+
+/**
+ * APCu cache driver status returned by the status endpoint.
+ */
+export interface CacheApcuInfo {
+    extensionLoaded?: boolean | null;
+    enabled?: boolean | null;
+    available?: boolean | null;
+}
+
+/**
+ * Filesystem cache driver status returned by the status endpoint.
+ */
+export interface CacheFileInfo {
+    path?: string | null;
+    exists?: boolean | null;
+    writable?: boolean | null;
+    available?: boolean | null;
+    sizeBytes?: number | string | null;
+    fileCount?: number | string | null;
+}
+
+/**
+ * Cache diagnostics and driver status returned by the status endpoint.
+ */
+export interface CacheInfo {
+    enabled?: boolean | null;
+    status?: string | null;
+    activeDriver?: string | null;
+    configuredDriver?: string | null;
+    path?: string | null;
+    writable?: boolean | null;
+    directoryExists?: boolean | null;
+    defaultTtl?: number | string | null;
+    negativeTtl?: number | string | null;
+    sizeBytes?: number | string | null;
+    fileCount?: number | string | null;
+    redis?: CacheRedisInfo | null;
+    apcu?: CacheApcuInfo | null;
+    file?: CacheFileInfo | null;
+}
+
+/**
  * Full payload returned by `GET /system/status`.
  */
 export interface SystemStatus {
@@ -296,6 +348,7 @@ export interface SystemStatus {
     storage?: StorageInfo | null;
     mail?: MailInfo | null;
     location?: LocationInfo | null;
+    cache?: CacheInfo | null;
     data?: SiteCounts | null;
 }
 
@@ -321,4 +374,32 @@ export interface CreateWebhookPayload {
     url: string;
     /** Event identifiers subscribed by the webhook. */
     events: string[];
+}
+
+/**
+ * Audit log activity entry returned by `/api/v1/analytics/activity`.
+ */
+export interface ActivityItem {
+    id?: string;
+    type?: string;
+    message?: string;
+    userId?: string | null;
+    linkId?: string | null;
+    metadata?: Record<string, unknown> | null;
+    createdAt?: string | null;
+    userName?: string | null;
+    userEmail?: string | null;
+    ipAddress?: string | null;
+    countryCode?: string | null;
+    country?: string | null;
+    city?: string | null;
+    [key: string]: unknown;
+}
+
+/**
+ * Result payload returned by bulk delete endpoints.
+ */
+export interface BulkDeleteResult {
+    deletedCount?: number;
+    [key: string]: unknown;
 }

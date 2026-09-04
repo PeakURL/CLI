@@ -16,6 +16,9 @@ describe("PeakURL CLI System Status", () => {
         assert.match(result.stdout, /PeakURL Test Site/);
         assert.match(result.stdout, /Database/);
         assert.match(result.stdout, /MariaDB/);
+        assert.match(result.stdout, /Cache/);
+        assert.match(result.stdout, /Active driver/);
+        assert.match(result.stdout, /file/);
     });
 
     it("returns the raw status envelope as JSON", async () => {
@@ -28,12 +31,15 @@ describe("PeakURL CLI System Status", () => {
             data: {
                 summary?: { overall?: string };
                 site?: { name?: string };
+                cache?: { activeDriver?: string; status?: string };
             };
         };
 
         assert.equal(parsed.success, true);
         assert.equal(parsed.data.summary?.overall, "warning");
         assert.equal(parsed.data.site?.name, "PeakURL Test Site");
+        assert.equal(parsed.data.cache?.activeDriver, "file");
+        assert.equal(parsed.data.cache?.status, "active");
     });
 
     it("prints the overall health value in quiet mode", async () => {

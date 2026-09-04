@@ -275,34 +275,136 @@ export async function getLink(
     writeStdout(formatLinkDetails(response.data));
 }
 
+interface DeleteLinkOptions extends OutputOptions {
+    all?: boolean;
+    trash?: boolean;
+    emptyTrash?: boolean;
+    ids?: string;
+    force?: boolean;
+}
+
 /**
- * Deletes a short link by identifier or alias.
+ * Deletes short links by identifier, in bulk, or clears all links.
  *
- * PeakURL's delete endpoint expects the stable row ID, so the CLI resolves the
- * user-provided identifier first and then performs the delete with that ID.
+ * Supports single link deletion, multiple positional arguments, comma-separated
+ * `--ids`, clearing all accessible links with `--all`, and emptying trash with `--trash`.
  *
- * @param idOrAlias Link ID, alias, or short code provided by the user.
- * @param options Parsed output options.
+ * @param identifiers One or more link IDs, aliases, or short codes.
+ * @param options Parsed deletion and output options.
  */
 export async function deleteLink(
-    idOrAlias: string,
-    options: OutputOptions,
+    identifiers: string[] | string | undefined,
+    options: DeleteLinkOptions,
 ): Promise<void> {
     const config = await getAuthConfig(process.env);
     const client = new ApiClient(config);
 
-    // Resolve aliases and short codes up front so delete works with the current
-    // PeakURL backend, which deletes by row ID rather than generic identifier.
-    const lookupResponse = await client.getUrl(idOrAlias);
-    const resolvedId = getLinkId(lookupResponse.data);
+    if (options.all) {
+        const response = await client.clearUrls();
 
-    if (!resolvedId) {
+        if (options.json) {
+            writeJson(response);
+            return;
+        }
+
+        if (options.quiet) {
+            return;
+        }
+
+        writeStdout(
+            successLine(response.message || "All short links deleted."),
+        );
+        return;
+    }
+
+    if (options.trash || options.emptyTrash) {
+        const response = await client.emptyTrash();
+
+        if (options.json) {
+            writeJson(response);
+            return;
+        }
+
+        if (options.quiet) {
+            return;
+        }
+
+        writeStdout(successLine(response.message || "Trash emptied."));
+        return;
+    }
+
+    const rawTargets: string[] = [];
+
+    if (typeof identifiers === "string" && identifiers.trim()) {
+        rawTargets.push(identifiers.trim());
+    } else if (Array.isArray(identifiers)) {
+        for (const item of identifiers) {
+            if (typeof item === "string" && item.trim()) {
+                rawTargets.push(item.trim());
+            }
+        }
+    }
+
+    if (options.ids) {
+        for (const id of options.ids.split(",")) {
+            const trimmed = id.trim();
+            if (trimmed) {
+                rawTargets.push(trimmed);
+            }
+        }
+    }
+
+    const uniqueTargets = Array.from(new Set(rawTargets));
+
+    if (uniqueTargets.length === 0) {
         throw new CliError(
-            "PeakURL returned a link record without an ID, so the CLI cannot delete it safely.",
+            "Specify one or more link identifiers or aliases to delete, or use --all to delete all links.",
         );
     }
 
-    const response = await client.deleteUrl(resolvedId);
+    if (uniqueTargets.length === 1) {
+        const lookupResponse = await client.getUrl(uniqueTargets[0]);
+        const resolvedId = getLinkId(lookupResponse.data);
+
+        if (!resolvedId) {
+            throw new CliError(
+                "PeakURL returned a link record without an ID, so the CLI cannot delete it safely.",
+            );
+        }
+
+        const response = await client.deleteUrl(resolvedId);
+
+        if (options.json) {
+            writeJson(response);
+            return;
+        }
+
+        if (options.quiet) {
+            return;
+        }
+
+        writeStdout(successLine(response.message));
+        return;
+    }
+
+    // Resolve multiple aliases/short codes to stable row IDs before bulk deleting.
+    const resolvedIds: string[] = [];
+
+    for (const target of uniqueTargets) {
+        try {
+            const lookup = await client.getUrl(target);
+            const id = getLinkId(lookup.data);
+            if (id) {
+                resolvedIds.push(id);
+            } else {
+                resolvedIds.push(target);
+            }
+        } catch {
+            resolvedIds.push(target);
+        }
+    }
+
+    const response = await client.deleteUrlsBulk(resolvedIds);
 
     if (options.json) {
         writeJson(response);
@@ -313,5 +415,10 @@ export async function deleteLink(
         return;
     }
 
-    writeStdout(successLine(response.message));
+    writeStdout(
+        successLine(
+            response.message ||
+                `Deleted ${resolvedIds.length} short link${resolvedIds.length === 1 ? "" : "s"}.`,
+        ),
+    );
 }

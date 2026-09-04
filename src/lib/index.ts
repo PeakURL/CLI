@@ -1,3 +1,4 @@
+export * from "./activity.js";
 export * from "./auth.js";
 export * from "./core.js";
 export * from "./errors.js";

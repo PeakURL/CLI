@@ -15,7 +15,7 @@ interface ExportRow {
     created_at: string;
 }
 
-const EXPORT_HEADERS: Array<keyof ExportRow> = [
+const EXPORT_HEADERS: (keyof ExportRow)[] = [
     "url",
     "alias",
     "title",
@@ -28,11 +28,19 @@ const EXPORT_HEADERS: Array<keyof ExportRow> = [
 ];
 
 function text(value: unknown): string {
-    return typeof value === "string" ? value : "";
+    if (typeof value === "string") {
+        return value;
+    }
+
+    if (typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+    }
+
+    return "";
 }
 
 function csvValue(value: unknown): string {
-    const content = value == null ? "" : String(value);
+    const content = value === null || value === undefined ? "" : text(value);
 
     if (/[",\r\n]/.test(content)) {
         return `"${content.replace(/"/g, '""')}"`;
@@ -42,7 +50,7 @@ function csvValue(value: unknown): string {
 }
 
 function xmlValue(value: unknown): string {
-    return String(value ?? "")
+    return text(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")

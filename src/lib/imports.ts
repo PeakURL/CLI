@@ -345,7 +345,7 @@ export async function readImportRows(
     filePath: string,
     format: LinkFileFormat,
 ): Promise<LinkInput[]> {
-    let textContent = "";
+    let textContent: string;
 
     try {
         textContent = await readFile(filePath, "utf8");

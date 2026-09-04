@@ -1,3 +1,4 @@
+export * from "./activity.js";
 export { downloadCore } from "./core.js";
 export {
     createLink,

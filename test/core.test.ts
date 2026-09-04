@@ -8,7 +8,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { getCoreRelease } from "../src/lib/index.js";
 
-function buildZip(entries: Array<{ path: string; content: string }>): Buffer {
+function buildZip(entries: { path: string; content: string }[]): Buffer {
     const fileChunks: Buffer[] = [];
     const centralChunks: Buffer[] = [];
     let offset = 0;

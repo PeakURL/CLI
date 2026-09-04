@@ -46,6 +46,20 @@ const mockWebhook = {
     createdAt: "2026-04-19T20:00:00.000Z",
 };
 
+const mockActivity = {
+    id: "act_123",
+    type: "link.created",
+    message: "Short link launch created.",
+    userId: "user_123",
+    userName: "Peak URL",
+    userEmail: "peak@example.com",
+    linkId: "url_123",
+    ipAddress: "127.0.0.1",
+    country: "United States",
+    city: "San Francisco",
+    createdAt: "2026-04-19T20:00:00.000Z",
+};
+
 const mockSystemStatus = {
     generatedAt: "2026-04-20T12:00:00.000Z",
     summary: {
@@ -156,6 +170,39 @@ const mockSystemStatus = {
         databaseReadable: true,
         downloadCommand: "php app/bin/update-geoip.php",
     },
+    cache: {
+        enabled: true,
+        status: "active",
+        activeDriver: "file",
+        configuredDriver: "auto",
+        path: "/var/www/html/content/cache",
+        writable: true,
+        directoryExists: true,
+        defaultTtl: 3600,
+        negativeTtl: 60,
+        sizeBytes: 4096,
+        fileCount: 12,
+        redis: {
+            configured: false,
+            host: "127.0.0.1",
+            port: 6379,
+            available: false,
+            serverVersion: null,
+        },
+        apcu: {
+            extensionLoaded: false,
+            enabled: false,
+            available: false,
+        },
+        file: {
+            path: "/var/www/html/content/cache",
+            exists: true,
+            writable: true,
+            available: true,
+            sizeBytes: 4096,
+            fileCount: 12,
+        },
+    },
     data: {
         users: 1,
         links: 1,
@@ -175,7 +222,7 @@ let server: ReturnType<typeof createServer>;
 let mockReleaseArchive: ReturnType<typeof buildZip>;
 let mockReleaseChecksum = "";
 
-function buildZip(entries: Array<{ path: string; content: string }>): Buffer {
+function buildZip(entries: { path: string; content: string }[]): Buffer {
     const fileChunks: Buffer[] = [];
     const centralChunks: Buffer[] = [];
     let offset = 0;
@@ -542,7 +589,7 @@ before(async () => {
 
         if (request.method === "POST" && url.pathname === "/api/v1/urls/bulk") {
             const body = (await parseRequestJsonBody(request)) as {
-                urls?: Array<Record<string, unknown>>;
+                urls?: Record<string, unknown>[];
             };
             const urls = Array.isArray(body.urls) ? body.urls : [];
             const results = urls.map((item, index) => {
@@ -592,6 +639,101 @@ before(async () => {
                 response,
                 200,
                 successEnvelope("URL deleted.", null),
+            );
+            return;
+        }
+
+        if (request.method === "DELETE" && url.pathname === "/api/v1/urls") {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("All links deleted.", { deletedCount: 5 }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "DELETE" &&
+            url.pathname === "/api/v1/urls/trash"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Trash emptied.", { deletedCount: 3 }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "DELETE" &&
+            url.pathname === "/api/v1/urls/bulk"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Bulk URL delete complete.", {
+                    deletedCount: 2,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "GET" &&
+            url.pathname === "/api/v1/analytics/activity"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Activity history loaded.", {
+                    items: [mockActivity],
+                    meta: {
+                        page: 1,
+                        limit: 25,
+                        totalItems: 1,
+                        totalPages: 1,
+                    },
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "DELETE" &&
+            url.pathname === "/api/v1/analytics/activity"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("All activity logs deleted.", {
+                    deletedCount: 10,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "DELETE" &&
+            url.pathname === "/api/v1/analytics/activity/bulk"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Bulk activity delete complete.", {
+                    deletedCount: 2,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "DELETE" &&
+            url.pathname === `/api/v1/analytics/activity/${mockActivity.id}`
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Activity log deleted.", null),
             );
             return;
         }

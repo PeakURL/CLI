@@ -4,14 +4,17 @@ import { readFile } from "node:fs/promises";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import {
     checkUpdate,
+    clearActivity,
     downloadCore,
     createWebhook,
     createLink,
+    deleteActivity,
     deleteLink,
     deleteWebhook,
     exportLinks,
     getLink,
     importLinks,
+    listActivity,
     listLinks,
     listWebhookEvents,
     listWebhooks,
@@ -20,6 +23,7 @@ import {
     status,
     whoami,
 } from "./commands/index.js";
+
 import {
     authRows,
     checkUpdates,
@@ -92,7 +96,12 @@ function getRetryCommandName(argv: string[]): string | undefined {
         return undefined;
     }
 
-    if (first === "webhook" || first === "webhooks") {
+    if (
+        first === "webhook" ||
+        first === "webhooks" ||
+        first === "activity" ||
+        first === "activities"
+    ) {
         const second = argv[3]?.trim();
         if (second && !second.startsWith("-")) {
             return `${first} ${second}`;
@@ -359,14 +368,103 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
     addExamples(
         program
             .command("delete")
-            .summary("Delete one short link")
-            .description("Delete a PeakURL short link by id or alias.")
+            .summary("Delete short links")
+            .description(
+                "Delete PeakURL short links by ID or alias, in bulk, or clear all links.",
+            )
             .helpOption("-h, --help", "Show help")
-            .argument("<id-or-alias>", "Link identifier or alias")
+            .argument("[id-or-alias...]", "Link identifier(s) or alias(es)")
+            .option("--all", "Delete all accessible short links")
+            .option(
+                "--trash, --empty-trash",
+                "Empty all short links currently in trash",
+            )
+            .option(
+                "--ids <ids>",
+                "Comma-separated list of link IDs to bulk delete",
+            )
             .option("--json", "Print machine-readable output")
             .option("--quiet", "Suppress success output")
             .action(deleteLink),
-        ["peakurl delete docs", "peakurl delete url_123 --quiet"],
+        [
+            "peakurl delete docs",
+            "peakurl delete docs pricing launch",
+            "peakurl delete --ids url_1,url_2,url_3",
+            "peakurl delete --empty-trash",
+            "peakurl delete --all",
+        ],
+    );
+
+    const activity = program
+        .command("activity")
+        .alias("activities")
+        .summary("View and manage activity logs")
+        .helpOption("-h, --help", "Show help")
+        .description(
+            "View audit log activity entries, delete specific records, or clear all history.",
+        );
+
+    addExamples(activity, [
+        "peakurl activity list",
+        "peakurl activity delete act_123 act_456",
+        "peakurl activity clear",
+    ]);
+
+    addExamples(
+        activity
+            .command("list", { isDefault: true })
+            .summary("List activity logs")
+            .description("List audit log activity records.")
+            .helpOption("-h, --help", "Show help")
+            .option("--page <number>", "Page number", parseNumber("page"))
+            .option("--limit <number>", "Page size", parseNumber("limit"))
+            .option("--search <query>", "Search term")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only activity record IDs")
+            .action(listActivity),
+        [
+            "peakurl activity",
+            "peakurl activity list",
+            "peakurl activity list --limit 25 --page 1",
+            "peakurl activity list --search delete --json",
+        ],
+    );
+
+    addExamples(
+        activity
+            .command("delete")
+            .summary("Delete activity logs")
+            .description(
+                "Delete one or more activity logs by ID, or clear all logs with --all.",
+            )
+            .helpOption("-h, --help", "Show help")
+            .argument("[ids...]", "One or more activity log IDs to delete")
+            .option("--all", "Delete all activity log history")
+            .option(
+                "--ids <ids>",
+                "Comma-separated list of activity log IDs to delete",
+            )
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Suppress success output")
+            .action(deleteActivity),
+        [
+            "peakurl activity delete act_123",
+            "peakurl activity delete act_123 act_456",
+            "peakurl activity delete --ids act_1,act_2",
+            "peakurl activity delete --all",
+        ],
+    );
+
+    addExamples(
+        activity
+            .command("clear")
+            .summary("Clear all activity logs")
+            .description("Delete all audit log activity records permanently.")
+            .helpOption("-h, --help", "Show help")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Suppress success output")
+            .action(clearActivity),
+        ["peakurl activity clear", "peakurl activity clear --json"],
     );
 
     addExamples(
@@ -383,7 +481,13 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
             )
             .option("--json", "Print machine-readable output")
             .option("--quiet", "Print minimal output")
-            .action((options) => checkUpdate(options, version)),
+            .action(
+                (options: {
+                    check?: boolean;
+                    json?: boolean;
+                    quiet?: boolean;
+                }) => checkUpdate(options, version),
+            ),
         ["peakurl update", "peakurl update --check", "peakurl update --json"],
     );
 
@@ -395,6 +499,7 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
         .description("Manage outbound webhook integrations.");
 
     addExamples(webhook, [
+        "peakurl webhook",
         "peakurl webhook list",
         "peakurl webhook create https://example.com/api/webhooks/peakurl --event link.clicked",
         "peakurl webhook events",
@@ -402,14 +507,18 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
 
     addExamples(
         webhook
-            .command("list")
+            .command("list", { isDefault: true })
             .summary("List webhooks")
             .description("List outbound webhooks.")
             .helpOption("-h, --help", "Show help")
             .option("--json", "Print machine-readable output")
             .option("--quiet", "Print minimal webhook identifiers")
             .action(listWebhooks),
-        ["peakurl webhook list", "peakurl webhook list --json"],
+        [
+            "peakurl webhook",
+            "peakurl webhook list",
+            "peakurl webhook list --json",
+        ],
     );
 
     addExamples(

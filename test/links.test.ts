@@ -36,6 +36,27 @@ describe("PeakURL CLI Link Management", () => {
         assert.match(result.stdout, /URL deleted/);
     });
 
+    it("deletes multiple short links in bulk", async () => {
+        const result = await runCli(["delete", "launch", "url_123"]);
+
+        assert.equal(result.code, 0);
+        assert.match(result.stdout, /Bulk URL delete complete\./);
+    });
+
+    it("deletes all short links with --all", async () => {
+        const result = await runCli(["delete", "--all"]);
+
+        assert.equal(result.code, 0);
+        assert.match(result.stdout, /All links deleted\./);
+    });
+
+    it("empties short links in trash with --empty-trash", async () => {
+        const result = await runCli(["delete", "--empty-trash"]);
+
+        assert.equal(result.code, 0);
+        assert.match(result.stdout, /Trash emptied\./);
+    });
+
     it("exports links as CSV", async () => {
         const workDir = await mkdtemp(join(tmpdir(), "peakurl-export-"));
         const outputPath = join(workDir, "links.csv");

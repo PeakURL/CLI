@@ -42,12 +42,12 @@ peakurl logout
 
 ## Authentication
 
-The CLI uses PeakURL bearer API keys and validates them against `GET /api/v1/users/me` before saving credentials.
+The CLI authenticates with PeakURL bearer API keys and verifies credentials with your instance before saving them locally.
 
 - `--base-url` expects the explicit API base URL, such as `https://example.com/api/v1`
-- API keys are opaque 48-character hex tokens
-- Credentials are stored in the standard per-user config location for `peakurl`
-- `peakurl logout` removes the saved config file, but shell environment variables still override auth if they are set
+- API keys are 48-character hexadecimal tokens generated from your PeakURL dashboard
+- Credentials are stored in the standard per-user configuration directory for `peakurl`
+- `peakurl logout` removes the saved configuration, while environment variables take precedence when set
 
 For CI or automation, you can also authenticate with environment variables:
 
@@ -58,21 +58,22 @@ export PEAKURL_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef
 
 ## Commands
 
-| Command                        | Description                                                 |
-| ------------------------------ | ----------------------------------------------------------- |
-| `peakurl login`                | Validate and save your PeakURL credentials.                 |
-| `peakurl whoami`               | Show the current authenticated account.                     |
-| `peakurl logout`               | Remove saved local CLI credentials.                         |
-| `peakurl status`               | Show the current system status snapshot for the site.       |
-| `peakurl core download`        | Download and extract the latest PeakURL core package.       |
-| `peakurl create <url>`         | Create a new short link.                                    |
-| `peakurl import <file>`        | Import links from a local CSV, JSON, or XML file.           |
-| `peakurl export`               | Export accessible links as CSV, JSON, or XML.               |
-| `peakurl list`                 | List links in your account.                                 |
-| `peakurl get <id-or-alias>`    | Fetch a single link by ID or alias.                         |
-| `peakurl delete <id-or-alias>` | Delete a link by ID or alias.                               |
-| `peakurl webhook <subcommand>` | List, create, delete, and inspect supported webhook events. |
-| `peakurl update`               | Show the latest available CLI version and install command.  |
+| Command                           | Description                                                 |
+| --------------------------------- | ----------------------------------------------------------- |
+| `peakurl login`                   | Validate and save your PeakURL credentials.                 |
+| `peakurl whoami`                  | Show the current authenticated account.                     |
+| `peakurl logout`                  | Remove saved local CLI credentials.                         |
+| `peakurl status`                  | Show the current system status snapshot for the site.       |
+| `peakurl core download`           | Download and extract the latest PeakURL core package.       |
+| `peakurl create <url>`            | Create a new short link.                                    |
+| `peakurl import <file>`           | Import links from a local CSV, JSON, or XML file.           |
+| `peakurl export`                  | Export accessible links as CSV, JSON, or XML.               |
+| `peakurl list`                    | List links in your account.                                 |
+| `peakurl get <id-or-alias>`       | Fetch a single link by ID or alias.                         |
+| `peakurl delete [id-or-alias...]` | Delete links by ID or alias, in bulk, or clear all links.   |
+| `peakurl activity <subcommand>`   | View audit logs, delete activity records, or clear history. |
+| `peakurl webhook <subcommand>`    | List, create, delete, and inspect supported webhook events. |
+| `peakurl update`                  | Show the latest available CLI version and install command.  |
 
 ## Examples
 
@@ -111,11 +112,11 @@ Show the current system status:
 peakurl status
 ```
 
-The status command calls `GET /api/v1/system/status` and prints summary, checks, plus site, server, database, storage, mail, location, and data tables when that information is available.
+Displays comprehensive system diagnostics, including health checks, site configuration, server metrics, database information, storage usage, mail settings, location analytics, cache diagnostics, and data counts.
 
-This route typically requires admin access on the PeakURL install.
+This command typically requires an administrator account on the PeakURL instance.
 
-If you need the raw payload:
+To output the complete diagnostics as JSON:
 
 ```bash
 peakurl status --json
@@ -135,13 +136,42 @@ Use `--force` only when you intentionally want those files replaced:
 peakurl core download --force
 ```
 
-Delete a link:
+Delete one or more links, or clear all links:
 
 ```bash
+# Delete a single link
 peakurl delete example
+
+# Bulk delete multiple links
+peakurl delete docs pricing blog launch
+
+# Bulk delete with comma-separated IDs
+peakurl delete --ids url_1,url_2,url_3
+
+# Empty all short links in trash
+peakurl delete --empty-trash
+
+# Delete all accessible short links
+peakurl delete --all
 ```
 
-When `delete` receives an alias or short code, the CLI resolves it to the underlying PeakURL row ID before deleting it.
+When `delete` receives aliases or short codes, the CLI resolves them to the underlying PeakURL row IDs before deleting them.
+
+List, inspect, and delete audit log activity:
+
+```bash
+# List recent activity records
+peakurl activity list
+
+# Filter and paginate activity logs
+peakurl activity list --search delete --limit 25 --page 1
+
+# Delete specific activity log entries
+peakurl activity delete act_123 act_456
+
+# Clear all activity log history
+peakurl activity clear
+```
 
 Import links from a local file:
 
@@ -149,7 +179,7 @@ Import links from a local file:
 peakurl import ./links.csv
 ```
 
-The import command accepts dashboard-style CSV, JSON, and XML files, normalizes them locally, and sends the API-native `urls` array to `POST /api/v1/urls/bulk`.
+The import command accepts CSV, JSON, and XML files, validates and normalizes the link records locally, and imports them in bulk.
 
 Export links as CSV:
 
