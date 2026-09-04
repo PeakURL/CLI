@@ -1,6 +1,6 @@
 {
     "name": "peakurl",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "description": "Official CLI for creating, listing, and managing PeakURL short links from the terminal",
     "homepage": "https://peakurl.org",
     "bugs": {
