@@ -2,6 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { runCli } from "./harness.js";
 
+test("job command defaults to list", async () => {
+    const { code, stdout } = await runCli(["job"]);
+    assert.equal(code, 0);
+    assert.match(stdout, /Success: Cron status loaded./);
+    assert.match(stdout, /peakurl_version_check/);
+});
+
 test("job list human-readable", async () => {
     const { code, stdout } = await runCli(["job", "list"]);
     assert.equal(code, 0);
@@ -125,10 +132,32 @@ test("job settings update", async () => {
     assert.match(stdout, /Success: Settings updated./);
 });
 
-test("does not accept aliases jobs or cron", async () => {
+test("rejects aliases and plurals with helpful suggestions", async () => {
     const jobsRes = await runCli(["jobs", "list"]);
     assert.notEqual(jobsRes.code, 0);
+    assert.match(
+        jobsRes.stderr,
+        /error: unknown command 'jobs'\. Did you mean 'peakurl job'\?/,
+    );
 
     const cronRes = await runCli(["cron", "list"]);
     assert.notEqual(cronRes.code, 0);
+    assert.match(
+        cronRes.stderr,
+        /error: unknown command 'cron'\. Did you mean 'peakurl job'\?/,
+    );
+
+    const webhooksRes = await runCli(["webhooks", "list"]);
+    assert.notEqual(webhooksRes.code, 0);
+    assert.match(
+        webhooksRes.stderr,
+        /error: unknown command 'webhooks'\. Did you mean 'peakurl webhook'\?/,
+    );
+
+    const activitiesRes = await runCli(["activities", "list"]);
+    assert.notEqual(activitiesRes.code, 0);
+    assert.match(
+        activitiesRes.stderr,
+        /error: unknown command 'activities'\. Did you mean 'peakurl activity'\?/,
+    );
 });

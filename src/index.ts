@@ -105,13 +105,7 @@ function getRetryCommandName(argv: string[]): string | undefined {
         return undefined;
     }
 
-    if (
-        first === "webhook" ||
-        first === "webhooks" ||
-        first === "activity" ||
-        first === "activities" ||
-        first === "job"
-    ) {
+    if (first === "webhook" || first === "activity" || first === "job") {
         const second = argv[3]?.trim();
         if (second && !second.startsWith("-")) {
             return `${first} ${second}`;
@@ -120,6 +114,16 @@ function getRetryCommandName(argv: string[]): string | undefined {
 
     return first;
 }
+
+const COMMAND_SUGGESTIONS: Record<string, string> = {
+    activities: "activity",
+    webhooks: "webhook",
+    jobs: "job",
+    cron: "job",
+    "scheduled-jobs": "job",
+    links: "list",
+    urls: "list",
+};
 
 /**
  * Registers the PeakURL command surface and executes the requested command.
@@ -139,6 +143,19 @@ async function main(): Promise<void> {
         .helpOption("-h, --help", "Show help")
         .helpCommand("help [command]", "Show help for a command")
         .version(version, "-v, --version", "Show CLI version")
+        .configureOutput({
+            outputError: (str, write) => {
+                const match = /error: unknown command '([^']+)'/.exec(str);
+                if (match && COMMAND_SUGGESTIONS[match[1]]) {
+                    const suggestion = COMMAND_SUGGESTIONS[match[1]];
+                    write(
+                        `error: unknown command '${match[1]}'. Did you mean 'peakurl ${suggestion}'?\n\n`,
+                    );
+                    return;
+                }
+                write(str);
+            },
+        })
         .showHelpAfterError()
         .showSuggestionAfterError()
         .addHelpText(
@@ -155,6 +172,8 @@ Common Commands:
   peakurl list --limit 10
   peakurl import ./links.csv
   peakurl export --format csv
+  peakurl activity list
+  peakurl job list
   peakurl webhook list
   peakurl update --check
 
@@ -407,7 +426,6 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
 
     const activity = program
         .command("activity")
-        .alias("activities")
         .summary("View and manage activity logs")
         .helpOption("-h, --help", "Show help")
         .description(
@@ -509,109 +527,174 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
         )
         .helpOption("-h, --help", "Show help");
 
-    jobCmd
-        .command("list")
-        .summary("List scheduled jobs")
-        .description("List all registered scheduled jobs.")
-        .helpOption("-h, --help", "Show help")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Print only job IDs")
-        .action(listJobs);
+    addExamples(jobCmd, [
+        "peakurl job",
+        "peakurl job list",
+        "peakurl job get peakurl_version_check",
+        "peakurl job run peakurl_version_check",
+        "peakurl job run-due",
+    ]);
 
-    jobCmd
-        .command("get")
-        .summary("Show job details")
-        .description(
-            "Show detailed configuration and status for one scheduled job.",
-        )
-        .helpOption("-h, --help", "Show help")
-        .argument("<id>", "Job identifier")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Print only the job ID")
-        .action(getJob);
+    addExamples(
+        jobCmd
+            .command("list", { isDefault: true })
+            .summary("List scheduled jobs")
+            .description("List all registered scheduled jobs.")
+            .helpOption("-h, --help", "Show help")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only job IDs")
+            .action(listJobs),
+        [
+            "peakurl job",
+            "peakurl job list",
+            "peakurl job list --json",
+            "peakurl job list --quiet",
+        ],
+    );
 
-    jobCmd
-        .command("run")
-        .summary("Run a scheduled job")
-        .description("Force a specific scheduled job to run immediately.")
-        .helpOption("-h, --help", "Show help")
-        .argument("<id>", "Job identifier")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Print only the execution status")
-        .action(runJob);
+    addExamples(
+        jobCmd
+            .command("get")
+            .summary("Show job details")
+            .description(
+                "Show detailed configuration and status for one scheduled job.",
+            )
+            .helpOption("-h, --help", "Show help")
+            .argument("<id>", "Job identifier")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only the job ID")
+            .action(getJob),
+        [
+            "peakurl job get peakurl_version_check",
+            "peakurl job get peakurl_version_check --json",
+        ],
+    );
 
-    jobCmd
-        .command("run-due")
-        .summary("Run due jobs")
-        .description("Trigger all scheduled jobs that are currently due.")
-        .helpOption("-h, --help", "Show help")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Print only the execution statuses")
-        .action(runDueJobs);
+    addExamples(
+        jobCmd
+            .command("run")
+            .summary("Run a scheduled job")
+            .description("Force a specific scheduled job to run immediately.")
+            .helpOption("-h, --help", "Show help")
+            .argument("<id>", "Job identifier")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only the execution status")
+            .action(runJob),
+        [
+            "peakurl job run peakurl_version_check",
+            "peakurl job run peakurl_version_check --json",
+        ],
+    );
 
-    jobCmd
-        .command("history")
-        .summary("View job history")
-        .description("View recent execution history for a scheduled job.")
-        .helpOption("-h, --help", "Show help")
-        .argument("<id>", "Job identifier")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Print only history record IDs")
-        .action(listJobHistory);
+    addExamples(
+        jobCmd
+            .command("run-due")
+            .summary("Run due jobs")
+            .description("Trigger all scheduled jobs that are currently due.")
+            .helpOption("-h, --help", "Show help")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only the execution statuses")
+            .action(runDueJobs),
+        ["peakurl job run-due", "peakurl job run-due --json"],
+    );
 
-    jobCmd
-        .command("clear-history")
-        .summary("Clear job history")
-        .description("Clear execution history for all jobs or a specific job.")
-        .helpOption("-h, --help", "Show help")
-        .option("--job <id>", "Specific job identifier to clear")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Suppress success output")
-        .action(clearJobHistory);
+    addExamples(
+        jobCmd
+            .command("history")
+            .summary("View job history")
+            .description("View recent execution history for a scheduled job.")
+            .helpOption("-h, --help", "Show help")
+            .argument("<id>", "Job identifier")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only history record IDs")
+            .action(listJobHistory),
+        [
+            "peakurl job history peakurl_version_check",
+            "peakurl job history peakurl_version_check --json",
+        ],
+    );
 
-    jobCmd
-        .command("schedule")
-        .summary("Update job schedule")
-        .description("Update the schedule configuration for a job.")
-        .helpOption("-h, --help", "Show help")
-        .argument("<id>", "Job identifier")
-        .option("--interval <seconds>", "Execution interval in seconds")
-        .option(
-            "--preferred-time <time>",
-            "Preferred run time (HH:MM or 'none')",
-        )
-        .option("--enabled", "Enable the job")
-        .option("--disabled", "Disable the job")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Suppress success output")
-        .action(updateJobSchedule);
+    addExamples(
+        jobCmd
+            .command("clear-history")
+            .summary("Clear job history")
+            .description(
+                "Clear execution history for all jobs or a specific job.",
+            )
+            .helpOption("-h, --help", "Show help")
+            .option("--job <id>", "Specific job identifier to clear")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Suppress success output")
+            .action(clearJobHistory),
+        [
+            "peakurl job clear-history",
+            "peakurl job clear-history --job peakurl_version_check",
+            "peakurl job clear-history --json",
+        ],
+    );
 
-    jobCmd
-        .command("reset")
-        .summary("Reset job schedule")
-        .description("Reset a job's schedule to its default configuration.")
-        .helpOption("-h, --help", "Show help")
-        .argument("<id>", "Job identifier")
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Suppress success output")
-        .action(resetJobSchedule);
+    addExamples(
+        jobCmd
+            .command("schedule")
+            .summary("Update job schedule")
+            .description("Update the schedule configuration for a job.")
+            .helpOption("-h, --help", "Show help")
+            .argument("<id>", "Job identifier")
+            .option("--interval <seconds>", "Execution interval in seconds")
+            .option(
+                "--preferred-time <time>",
+                "Preferred run time (HH:MM or 'none')",
+            )
+            .option("--enabled", "Enable the job")
+            .option("--disabled", "Disable the job")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Suppress success output")
+            .action(updateJobSchedule),
+        [
+            "peakurl job schedule peakurl_version_check --interval 43200",
+            "peakurl job schedule peakurl_version_check --preferred-time 03:00",
+            "peakurl job schedule peakurl_version_check --disabled",
+        ],
+    );
 
-    jobCmd
-        .command("settings")
-        .summary("Manage scheduler settings")
-        .description("View or update global scheduler settings.")
-        .helpOption("-h, --help", "Show help")
-        .option(
-            "--retention-days <days>",
-            "Number of days to keep execution history",
-        )
-        .option("--json", "Print machine-readable output")
-        .option("--quiet", "Print minimal output")
-        .action(updateJobSettings);
+    addExamples(
+        jobCmd
+            .command("reset")
+            .summary("Reset job schedule")
+            .description("Reset a job's schedule to its default configuration.")
+            .helpOption("-h, --help", "Show help")
+            .argument("<id>", "Job identifier")
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Suppress success output")
+            .action(resetJobSchedule),
+        [
+            "peakurl job reset peakurl_version_check",
+            "peakurl job reset peakurl_version_check --json",
+        ],
+    );
+
+    addExamples(
+        jobCmd
+            .command("settings")
+            .summary("Manage scheduler settings")
+            .description("View or update global scheduler settings.")
+            .helpOption("-h, --help", "Show help")
+            .option(
+                "--retention-days <days>",
+                "Number of days to keep execution history",
+            )
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print minimal output")
+            .action(updateJobSettings),
+        [
+            "peakurl job settings",
+            "peakurl job settings --retention-days 14",
+            "peakurl job settings --json",
+        ],
+    );
 
     const webhook = program
         .command("webhook")
-        .alias("webhooks")
         .summary("Manage webhooks")
         .helpOption("-h, --help", "Show help")
         .description("Manage outbound webhook integrations.");
