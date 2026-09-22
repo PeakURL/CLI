@@ -215,6 +215,42 @@ const mockSystemStatus = {
     },
 };
 
+const mockJobRun = {
+    id: "run_123",
+    status: "successful",
+    attempt: 1,
+    started_at: "2026-04-19T20:00:00.000Z",
+    finished_at: "2026-04-19T20:00:01.000Z",
+    duration_ms: 1000,
+    output_summary: "Job finished successfully",
+    error_message: null,
+};
+
+const mockJob = {
+    id: "peakurl_version_check",
+    title: "PeakURL Version Check",
+    interval_seconds: 43200,
+    recommended_interval_seconds: 43200,
+    preferred_run_time: "03:00",
+    is_customized: false,
+    status: "idle",
+    is_enabled: true,
+    next_run_at: "2026-04-20T03:00:00.000Z",
+    last_run_at: "2026-04-19T03:00:00.000Z",
+    last_finished_at: "2026-04-19T03:00:01.000Z",
+    attempts: 0,
+    max_attempts: 3,
+    last_error: null,
+    recent_runs: [mockJobRun],
+};
+
+const mockJobStatus = {
+    jobs: [mockJob],
+    jobs_count: 1,
+    retention_days: 30,
+    timezone: "Europe/London",
+};
+
 let siteUrl = "";
 let apiBaseUrl = "";
 let cliVersion = "";
@@ -747,6 +783,129 @@ before(async () => {
                 response,
                 200,
                 successEnvelope("Webhook deleted.", { deleted: true }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "GET" &&
+            url.pathname === "/api/v1/system/cron"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Cron status loaded.", mockJobStatus),
+            );
+            return;
+        }
+
+        if (
+            request.method === "POST" &&
+            url.pathname === "/api/v1/system/cron/run"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Due jobs executed.", {
+                    run_all: true,
+                    results: [
+                        {
+                            job_id: mockJob.id,
+                            status: "successful",
+                            summary: "Job finished",
+                            error: null,
+                            success: true,
+                        },
+                    ],
+                    success: true,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "POST" &&
+            url.pathname === `/api/v1/system/cron/run/${mockJob.id}`
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Job executed.", {
+                    job_id: mockJob.id,
+                    status: "successful",
+                    summary: "Job finished",
+                    error: null,
+                    success: true,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "POST" &&
+            url.pathname === "/api/v1/system/cron/history/clear"
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("History cleared.", {
+                    deleted_count: 5,
+                    job_id: null,
+                    job_key: null,
+                    success: true,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "PATCH" &&
+            url.pathname === `/api/v1/system/cron/jobs/${mockJob.id}`
+        ) {
+            const body = (await parseRequestJsonBody(request)) as Record<
+                string,
+                unknown
+            >;
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Schedule updated.", {
+                    ...mockJob,
+                    ...body,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "POST" &&
+            url.pathname === `/api/v1/system/cron/jobs/${mockJob.id}/reset`
+        ) {
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Schedule reset.", {
+                    ...mockJob,
+                    interval_seconds: mockJob.recommended_interval_seconds,
+                    is_customized: false,
+                }),
+            );
+            return;
+        }
+
+        if (
+            request.method === "POST" &&
+            url.pathname === "/api/v1/system/cron/settings"
+        ) {
+            const body = (await parseRequestJsonBody(request)) as {
+                retention_days: number;
+            };
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Settings updated.", {
+                    retention_days: body.retention_days,
+                }),
             );
             return;
         }

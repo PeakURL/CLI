@@ -14,3 +14,4 @@ export { status } from "./status.js";
 export { checkUpdate } from "./update.js";
 export * from "./webhooks.js";
 export { whoami } from "./whoami.js";
+export * from "./job.js";

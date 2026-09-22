@@ -22,6 +22,15 @@ import {
     logout,
     status,
     whoami,
+    clearJobHistory,
+    getJob,
+    listJobHistory,
+    listJobs,
+    resetJobSchedule,
+    runDueJobs,
+    runJob,
+    updateJobSchedule,
+    updateJobSettings,
 } from "./commands/index.js";
 
 import {
@@ -100,7 +109,8 @@ function getRetryCommandName(argv: string[]): string | undefined {
         first === "webhook" ||
         first === "webhooks" ||
         first === "activity" ||
-        first === "activities"
+        first === "activities" ||
+        first === "job"
     ) {
         const second = argv[3]?.trim();
         if (second && !second.startsWith("-")) {
@@ -490,6 +500,114 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
             ),
         ["peakurl update", "peakurl update --check", "peakurl update --json"],
     );
+
+    const jobCmd = program
+        .command("job")
+        .summary("Manage scheduled jobs")
+        .description(
+            "Manage server-side scheduled jobs, view their execution history, and run them manually.",
+        )
+        .helpOption("-h, --help", "Show help");
+
+    jobCmd
+        .command("list")
+        .summary("List scheduled jobs")
+        .description("List all registered scheduled jobs.")
+        .helpOption("-h, --help", "Show help")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Print only job IDs")
+        .action(listJobs);
+
+    jobCmd
+        .command("get")
+        .summary("Show job details")
+        .description(
+            "Show detailed configuration and status for one scheduled job.",
+        )
+        .helpOption("-h, --help", "Show help")
+        .argument("<id>", "Job identifier")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Print only the job ID")
+        .action(getJob);
+
+    jobCmd
+        .command("run")
+        .summary("Run a scheduled job")
+        .description("Force a specific scheduled job to run immediately.")
+        .helpOption("-h, --help", "Show help")
+        .argument("<id>", "Job identifier")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Print only the execution status")
+        .action(runJob);
+
+    jobCmd
+        .command("run-due")
+        .summary("Run due jobs")
+        .description("Trigger all scheduled jobs that are currently due.")
+        .helpOption("-h, --help", "Show help")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Print only the execution statuses")
+        .action(runDueJobs);
+
+    jobCmd
+        .command("history")
+        .summary("View job history")
+        .description("View recent execution history for a scheduled job.")
+        .helpOption("-h, --help", "Show help")
+        .argument("<id>", "Job identifier")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Print only history record IDs")
+        .action(listJobHistory);
+
+    jobCmd
+        .command("clear-history")
+        .summary("Clear job history")
+        .description("Clear execution history for all jobs or a specific job.")
+        .helpOption("-h, --help", "Show help")
+        .option("--job <id>", "Specific job identifier to clear")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Suppress success output")
+        .action(clearJobHistory);
+
+    jobCmd
+        .command("schedule")
+        .summary("Update job schedule")
+        .description("Update the schedule configuration for a job.")
+        .helpOption("-h, --help", "Show help")
+        .argument("<id>", "Job identifier")
+        .option("--interval <seconds>", "Execution interval in seconds")
+        .option(
+            "--preferred-time <time>",
+            "Preferred run time (HH:MM or 'none')",
+        )
+        .option("--enabled", "Enable the job")
+        .option("--disabled", "Disable the job")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Suppress success output")
+        .action(updateJobSchedule);
+
+    jobCmd
+        .command("reset")
+        .summary("Reset job schedule")
+        .description("Reset a job's schedule to its default configuration.")
+        .helpOption("-h, --help", "Show help")
+        .argument("<id>", "Job identifier")
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Suppress success output")
+        .action(resetJobSchedule);
+
+    jobCmd
+        .command("settings")
+        .summary("Manage scheduler settings")
+        .description("View or update global scheduler settings.")
+        .helpOption("-h, --help", "Show help")
+        .option(
+            "--retention-days <days>",
+            "Number of days to keep execution history",
+        )
+        .option("--json", "Print machine-readable output")
+        .option("--quiet", "Print minimal output")
+        .action(updateJobSettings);
 
     const webhook = program
         .command("webhook")

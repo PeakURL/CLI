@@ -3,11 +3,17 @@ import type {
     ApiResponse,
     AuthConfig,
     BulkDeleteResult,
+    ClearHistoryResult,
     CreateWebhookPayload,
+    Job,
+    JobStatus,
     Link,
     LinkImportData,
     LinkInput,
+    RunJobResult,
+    RunDueResult,
     SystemStatus,
+    UpdateJobPayload,
     User,
     Webhook,
 } from "../types.js";
@@ -289,6 +295,98 @@ export class ApiClient {
         return this.request<unknown>(
             "DELETE",
             `webhooks/${encodeURIComponent(id)}`,
+        );
+    }
+
+    /**
+     * Loads the current status of the cron scheduler.
+     *
+     * @returns API response envelope containing the scheduler status.
+     */
+    getJobStatus(): Promise<ApiResponse<JobStatus>> {
+        return this.request<JobStatus>("GET", "system/cron");
+    }
+
+    /**
+     * Triggers all due cron jobs to run.
+     *
+     * @returns API response envelope containing the execution results.
+     */
+    runDueJobs(): Promise<ApiResponse<RunDueResult>> {
+        return this.request<RunDueResult>("POST", "system/cron/run");
+    }
+
+    /**
+     * Forces a specific cron job to run immediately.
+     *
+     * @param id Job identifier.
+     * @returns API response envelope containing the execution result.
+     */
+    runJob(id: string): Promise<ApiResponse<RunJobResult>> {
+        return this.request<RunJobResult>(
+            "POST",
+            `system/cron/run/${encodeURIComponent(id)}`,
+        );
+    }
+
+    /**
+     * Clears cron execution history.
+     *
+     * @param jobId Optional job identifier to clear history only for one job.
+     * @returns API response envelope containing the deleted count.
+     */
+    clearJobHistory(jobId?: string): Promise<ApiResponse<ClearHistoryResult>> {
+        return this.request<ClearHistoryResult>(
+            "POST",
+            "system/cron/history/clear",
+            jobId ? { job_id: jobId } : undefined,
+        );
+    }
+
+    /**
+     * Updates the schedule configuration for a cron job.
+     *
+     * @param id Job identifier.
+     * @param payload New configuration options.
+     * @returns API response envelope containing the updated job.
+     */
+    updateJobSchedule(
+        id: string,
+        payload: UpdateJobPayload,
+    ): Promise<ApiResponse<Job>> {
+        return this.request<Job>(
+            "PATCH",
+            `system/cron/jobs/${encodeURIComponent(id)}`,
+            payload,
+        );
+    }
+
+    /**
+     * Resets a cron job schedule to its default configuration.
+     *
+     * @param id Job identifier.
+     * @returns API response envelope containing the restored job.
+     */
+    resetJobSchedule(id: string): Promise<ApiResponse<Job>> {
+        return this.request<Job>(
+            "POST",
+            `system/cron/jobs/${encodeURIComponent(id)}/reset`,
+        );
+    }
+
+    /**
+     * Updates the global cron settings, such as history retention.
+     *
+     * @param payload New global settings.
+     * @returns API response envelope containing the updated retention settings.
+     */
+    updateJobSettings(payload: {
+        retention_days: number;
+    }): Promise<ApiResponse<{ retention_days: number }>> {
+        return this.request<{ retention_days: number }>(
+            "POST",
+            "system/cron/settings",
+            payload,
         );
     }
 

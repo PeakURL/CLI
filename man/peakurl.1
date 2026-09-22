@@ -195,6 +195,54 @@ List supported webhook event identifiers.
 .Bd -literal -offset indent
 peakurl webhook events
 .Ed
+.It Cm job list
+List all registered scheduled jobs.
+.Bd -literal -offset indent
+peakurl job list
+peakurl job list --json
+.Ed
+.It Cm job get Ar id
+Fetch one scheduled job by ID.
+.Bd -literal -offset indent
+peakurl job get peakurl_version_check
+.Ed
+.It Cm job run Ar id
+Force a specific scheduled job to run immediately.
+.Bd -literal -offset indent
+peakurl job run peakurl_version_check
+.Ed
+.It Cm job run-due
+Trigger all scheduled jobs that are currently due.
+.Bd -literal -offset indent
+peakurl job run-due
+.Ed
+.It Cm job history Ar id
+View recent execution history for a scheduled job.
+.Bd -literal -offset indent
+peakurl job history peakurl_version_check
+.Ed
+.It Cm job clear-history
+Clear execution history for all jobs or a specific job.
+.Bd -literal -offset indent
+peakurl job clear-history
+peakurl job clear-history --job peakurl_version_check
+.Ed
+.It Cm job schedule Ar id
+Update the schedule configuration for a job.
+.Bd -literal -offset indent
+peakurl job schedule peakurl_version_check --interval 43200 --preferred-time 03:00 --enabled
+.Ed
+.It Cm job reset Ar id
+Reset a job's schedule to its default configuration.
+.Bd -literal -offset indent
+peakurl job reset peakurl_version_check
+.Ed
+.It Cm job settings
+View or update global scheduler settings.
+.Bd -literal -offset indent
+peakurl job settings
+peakurl job settings --retention-days 14
+.Ed
 .It Cm update
 Check for a newer CLI version and print the npm install command when an
 update is available.

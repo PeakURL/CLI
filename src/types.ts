@@ -403,3 +403,87 @@ export interface BulkDeleteResult {
     deletedCount?: number;
     [key: string]: unknown;
 }
+
+/**
+ * One scheduled cron job.
+ */
+export interface Job {
+    id: string;
+    title: string;
+    interval_seconds: number;
+    recommended_interval_seconds: number;
+    preferred_run_time: string | null;
+    is_customized: boolean;
+    status: string;
+    is_enabled: boolean;
+    next_run_at: string | null;
+    last_run_at: string | null;
+    last_finished_at: string | null;
+    attempts: number;
+    max_attempts: number;
+    last_error: string | null;
+    recent_runs?: JobRun[];
+}
+
+/**
+ * Execution history record for a cron job.
+ */
+export interface JobRun {
+    id: string;
+    status: string;
+    attempt: number;
+    started_at: string;
+    finished_at: string | null;
+    duration_ms: number | null;
+    output_summary: string | null;
+    error_message: string | null;
+}
+
+/**
+ * Status of the cron scheduler.
+ */
+export interface JobStatus {
+    jobs: Job[];
+    jobs_count: number;
+    retention_days: number;
+    timezone: string;
+}
+
+/**
+ * Result of running a single cron job.
+ */
+export interface RunJobResult {
+    job_id: string;
+    status: string;
+    summary: string | null;
+    error: string | null;
+    success: boolean;
+}
+
+/**
+ * Result of running all due cron jobs.
+ */
+export interface RunDueResult {
+    run_all: boolean;
+    results: RunJobResult[];
+    success: boolean;
+}
+
+/**
+ * Result of clearing cron history.
+ */
+export interface ClearHistoryResult {
+    deleted_count: number;
+    job_id?: string | null;
+    job_key?: string | null;
+    success: boolean;
+}
+
+/**
+ * Payload to update a cron job schedule.
+ */
+export interface UpdateJobPayload {
+    interval_seconds?: number;
+    preferred_run_time?: string | null;
+    is_enabled?: boolean;
+}
