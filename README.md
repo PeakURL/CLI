@@ -6,7 +6,7 @@ The official command-line interface for PeakURL.
 
 Use `peakurl` to create short links, inspect existing links, and manage your PeakURL account from the terminal.
 
-Learn more in the full CLI docs: <https://go.peakurl.org/7a0e0b>
+Learn more in the full CLI docs [here.](https://go.peakurl.org/7a0e0b)
 
 ## Install
 
@@ -268,8 +268,8 @@ export PEAKURL_DISABLE_UPDATE_CHECK=1
 
 ## Links
 
-- Website: <https://peakurl.org/>
-- CLI docs: <https://go.peakurl.org/7a0e0b>
-- API docs: <https://go.peakurl.org/d373f6>
-- npm package: <https://www.npmjs.com/package/peakurl>
-- Issues: <https://github.com/PeakURL/CLI/issues>
+- [Website](https://peakurl.org/)
+- [CLI docs](https://go.peakurl.org/7a0e0b)
+- [API docs](https://go.peakurl.org/d373f6)
+- [npm package](https://www.npmjs.com/package/peakurl)
+- [Issues](https://github.com/PeakURL/CLI/issues)
