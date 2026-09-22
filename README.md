@@ -6,7 +6,7 @@ The official command-line interface for PeakURL.
 
 Use `peakurl` to create short links, inspect existing links, and manage your PeakURL account from the terminal.
 
-Learn more in the full CLI docs: <https://peakurl.org/docs/cli>
+Learn more in the full CLI docs: <https://go.peakurl.org/7a0e0b>
 
 ## Install
 
@@ -73,6 +73,7 @@ export PEAKURL_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef
 | `peakurl delete [id-or-alias...]` | Delete links by ID or alias, in bulk, or clear all links.   |
 | `peakurl activity <subcommand>`   | View audit logs, delete activity records, or clear history. |
 | `peakurl webhook <subcommand>`    | List, create, delete, and inspect supported webhook events. |
+| `peakurl job <cmd>`               | Manage server-side scheduled jobs.                          |
 | `peakurl update`                  | Show the latest available CLI version and install command.  |
 
 ## Examples
@@ -228,6 +229,19 @@ Check the latest available CLI version:
 peakurl update --check
 ```
 
+Manage scheduled jobs:
+
+```bash
+# List all registered scheduled jobs
+peakurl job list
+
+# Force a job to run immediately
+peakurl job run peakurl_version_check
+
+# Trigger all currently due jobs
+peakurl job run-due
+```
+
 Show the recommended install command:
 
 ```bash
@@ -255,7 +269,7 @@ export PEAKURL_DISABLE_UPDATE_CHECK=1
 ## Links
 
 - Website: <https://peakurl.org/>
-- CLI docs: <https://peakurl.org/docs/cli>
-- API docs: <https://peakurl.org/docs/api>
+- CLI docs: <https://go.peakurl.org/7a0e0b>
+- API docs: <https://go.peakurl.org/d373f6>
 - npm package: <https://www.npmjs.com/package/peakurl>
 - Issues: <https://github.com/PeakURL/CLI/issues>
