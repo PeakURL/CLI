@@ -600,6 +600,43 @@ before(async () => {
             return;
         }
 
+        if (
+            (request.method === "PUT" || request.method === "POST") &&
+            url.pathname === `/api/v1/urls/${mockLink.id}`
+        ) {
+            const contentType = request.headers["content-type"] || "";
+            if (contentType.includes("multipart/form-data")) {
+                // Consume request body
+                for await (const _chunk of request) {
+                    // consume
+                }
+                sendJsonResponse(
+                    response,
+                    200,
+                    successEnvelope("Short URL updated.", {
+                        ...mockLink,
+                        socialImageUrl:
+                            "https://peakurl.test/content/uploads/social-images/uploaded.png",
+                    }),
+                );
+                return;
+            }
+
+            const body = (await parseRequestJsonBody(request)) as Record<
+                string,
+                unknown
+            >;
+            sendJsonResponse(
+                response,
+                200,
+                successEnvelope("Short URL updated.", {
+                    ...mockLink,
+                    ...body,
+                }),
+            );
+            return;
+        }
+
         if (request.method === "POST" && url.pathname === "/api/v1/webhooks") {
             const body = (await parseRequestJsonBody(request)) as Record<
                 string,

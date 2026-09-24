@@ -1,3 +1,5 @@
+import { readFile, stat } from "node:fs/promises";
+import { basename, extname } from "node:path";
 import type {
     ActivityItem,
     ApiResponse,
@@ -14,11 +16,78 @@ import type {
     RunDueResult,
     SystemStatus,
     UpdateJobPayload,
+    UpdateLinkPayload,
     User,
     Webhook,
 } from "../types.js";
 import { CliError } from "../lib/errors.js";
 import { buildApiUrl } from "../lib/url.js";
+
+const IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+};
+
+const MAX_SOCIAL_IMAGE_BYTES = 5 * 1024 * 1024;
+
+async function toFormData(
+    fields: Record<string, unknown>,
+    socialImagePath: string,
+): Promise<FormData> {
+    const ext = extname(socialImagePath).toLowerCase();
+    const mimeType = IMAGE_MIME_BY_EXTENSION[ext];
+
+    if (!mimeType) {
+        throw new CliError(
+            "Invalid social image file type. Only JPG, PNG, WEBP, and GIF images are allowed.",
+        );
+    }
+
+    let fileStats;
+    try {
+        fileStats = await stat(socialImagePath);
+    } catch (error) {
+        throw new CliError(
+            `Could not read social image file ${socialImagePath}.`,
+            1,
+            {
+                cause: error instanceof Error ? error : undefined,
+            },
+        );
+    }
+
+    if (fileStats.size > MAX_SOCIAL_IMAGE_BYTES) {
+        throw new CliError(
+            "Social image file is too large. Maximum size is 5MB.",
+        );
+    }
+
+    const buffer = await readFile(socialImagePath);
+    const formData = new FormData();
+
+    for (const [key, value] of Object.entries(fields)) {
+        if (
+            key === "socialImagePath" ||
+            (typeof value !== "string" &&
+                typeof value !== "number" &&
+                typeof value !== "boolean")
+        ) {
+            continue;
+        }
+        formData.append(key, String(value));
+    }
+
+    formData.append(
+        "socialImage",
+        new Blob([buffer], { type: mimeType }),
+        basename(socialImagePath),
+    );
+
+    return formData;
+}
 
 type QueryParams = Record<string, string | number | undefined>;
 
@@ -108,8 +177,45 @@ export class ApiClient {
      * @param payload Request body accepted by `POST /api/v1/urls`.
      * @returns API response envelope containing the created link.
      */
-    createUrl(payload: LinkInput): Promise<ApiResponse<Link>> {
-        return this.request<Link>("POST", "urls", payload);
+    async createUrl(payload: LinkInput): Promise<ApiResponse<Link>> {
+        if (payload.socialImagePath) {
+            const formData = await toFormData(
+                payload as unknown as Record<string, unknown>,
+                payload.socialImagePath,
+            );
+            return this.request<Link>("POST", "urls", formData);
+        }
+
+        const { socialImagePath: _unused, ...jsonPayload } = payload;
+        return this.request<Link>("POST", "urls", jsonPayload);
+    }
+
+    /**
+     * Updates an existing short URL by its stable row ID.
+     *
+     * Sends `POST /api/v1/urls/{id}` with `multipart/form-data` when uploading a
+     * local social preview image, or `PUT /api/v1/urls/{id}` with JSON otherwise.
+     *
+     * @param id Stable link row ID.
+     * @param payload Fields to update on the short link.
+     * @returns API response envelope containing the updated link.
+     */
+    async updateUrl(
+        id: string,
+        payload: UpdateLinkPayload,
+    ): Promise<ApiResponse<Link>> {
+        const path = `urls/${encodeURIComponent(id)}`;
+
+        if (payload.socialImagePath) {
+            const formData = await toFormData(
+                payload as unknown as Record<string, unknown>,
+                payload.socialImagePath,
+            );
+            return this.request<Link>("POST", path, formData);
+        }
+
+        const { socialImagePath: _unused, ...jsonPayload } = payload;
+        return this.request<Link>("PUT", path, jsonPayload);
     }
 
     /**
@@ -410,15 +516,23 @@ export class ApiClient {
 
         let response: Response;
 
+        const isFormData = body instanceof FormData;
+
         try {
             response = await fetch(url, {
                 method,
                 headers: {
                     Accept: "application/json",
                     Authorization: `Bearer ${this.config.apiKey}`,
-                    ...(body ? { "Content-Type": "application/json" } : {}),
+                    ...(body && !isFormData
+                        ? { "Content-Type": "application/json" }
+                        : {}),
                 },
-                body: body ? JSON.stringify(body) : undefined,
+                body: isFormData
+                    ? body
+                    : body
+                      ? JSON.stringify(body)
+                      : undefined,
             });
         } catch (error) {
             throw new CliError(networkError(this.config.apiBaseUrl, error), 1, {

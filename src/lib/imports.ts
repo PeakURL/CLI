@@ -147,6 +147,26 @@ function normalizeImportRow(value: Record<string, unknown>): LinkInput | null {
         ...(text(value.utmContent)
             ? { utmContent: text(value.utmContent) }
             : {}),
+        ...(text(value.socialTitle) || text(value.social_title)
+            ? {
+                  socialTitle:
+                      text(value.socialTitle) || text(value.social_title),
+              }
+            : {}),
+        ...(text(value.socialDescription) || text(value.social_description)
+            ? {
+                  socialDescription:
+                      text(value.socialDescription) ||
+                      text(value.social_description),
+              }
+            : {}),
+        ...(text(value.socialImageUrl) || text(value.social_image_url)
+            ? {
+                  socialImageUrl:
+                      text(value.socialImageUrl) ||
+                      text(value.social_image_url),
+              }
+            : {}),
     };
 }
 
@@ -255,6 +275,21 @@ function parseCsv(text: string): LinkInput[] {
 
             if (header === "utmcontent") {
                 entry.utmContent = value;
+                return;
+            }
+
+            if (header === "socialtitle") {
+                entry.socialTitle = value;
+                return;
+            }
+
+            if (header === "socialdescription") {
+                entry.socialDescription = value;
+                return;
+            }
+
+            if (header === "socialimageurl" || header === "socialimage") {
+                entry.socialImageUrl = value;
             }
         });
 
@@ -301,6 +336,9 @@ function parseXml(text: string): LinkInput[] {
                 utmCampaign: getValue("utmCampaign"),
                 utmTerm: getValue("utmTerm"),
                 utmContent: getValue("utmContent"),
+                socialTitle: getValue("socialTitle"),
+                socialDescription: getValue("socialDescription"),
+                socialImageUrl: getValue("socialImageUrl"),
             });
         })
         .filter((item): item is LinkInput => Boolean(item));

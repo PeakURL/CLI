@@ -152,6 +152,17 @@ export function getQuietLinkValue(link: Link): string {
  * @returns Multi-line label/value block.
  */
 export function formatLinkDetails(link: Link): string {
+    const socialPreview = asObject(link.socialPreview);
+    const socialTitle =
+        asString(link.socialTitle) || asString(socialPreview?.title);
+    const socialDescription =
+        asString(link.socialDescription) ||
+        asString(socialPreview?.description);
+    const socialImage =
+        asString(link.socialImageUrl) ||
+        asString(socialPreview?.externalImageUrl) ||
+        asString(socialPreview?.imageUrl);
+
     const rows = [
         ["ID", getLinkId(link)],
         ["Alias", getLinkAlias(link)],
@@ -159,6 +170,9 @@ export function formatLinkDetails(link: Link): string {
         ["Destination", getLinkDestination(link)],
         ["Title", asString(link.title)],
         ["Status", asString(link.status)],
+        ["Social Title", socialTitle],
+        ["Social Description", socialDescription],
+        ["Social Image", socialImage],
         [
             "Clicks",
             asNumber(link.clicks) === undefined

@@ -13,6 +13,9 @@ interface ExportRow {
     clicks: ExportValue;
     unique_clicks: ExportValue;
     created_at: string;
+    social_title: string;
+    social_description: string;
+    social_image_url: string;
 }
 
 const EXPORT_HEADERS: (keyof ExportRow)[] = [
@@ -25,6 +28,9 @@ const EXPORT_HEADERS: (keyof ExportRow)[] = [
     "clicks",
     "unique_clicks",
     "created_at",
+    "social_title",
+    "social_description",
+    "social_image_url",
 ];
 
 function text(value: unknown): string {
@@ -135,6 +141,14 @@ export function buildExportRows(links: Link[]): ExportRow[] {
         unique_clicks:
             typeof link.uniqueClicks === "number" ? link.uniqueClicks : "",
         created_at: text(link.createdAt),
+        social_title: text(link.socialTitle) || text(link.socialPreview?.title),
+        social_description:
+            text(link.socialDescription) ||
+            text(link.socialPreview?.description),
+        social_image_url:
+            text(link.socialImageUrl) ||
+            text(link.socialPreview?.externalImageUrl) ||
+            text(link.socialPreview?.imageUrl),
     }));
 }
 
@@ -168,6 +182,9 @@ export function serializeLinkExport(
     <clicks>${xmlValue(row.clicks)}</clicks>
     <uniqueClicks>${xmlValue(row.unique_clicks)}</uniqueClicks>
     <createdAt>${xmlValue(row.created_at)}</createdAt>
+    <socialTitle>${xmlValue(row.social_title)}</socialTitle>
+    <socialDescription>${xmlValue(row.social_description)}</socialDescription>
+    <socialImageUrl>${xmlValue(row.social_image_url)}</socialImageUrl>
   </url>`,
             )
             .join("\n");

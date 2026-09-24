@@ -3,6 +3,7 @@ export { downloadCore } from "./core.js";
 export {
     createLink,
     deleteLink,
+    editLink,
     exportLinks,
     getLink,
     importLinks,

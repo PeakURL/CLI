@@ -25,6 +25,24 @@
 .Ar url
 .Op Fl -alias Ar alias
 .Op Fl -title Ar title
+.Op Fl -social-title Ar title
+.Op Fl -social-description Ar text
+.Op Fl -social-image-url Ar url
+.Op Fl -social-image Ar path
+.Op Fl -json
+.Op Fl -quiet
+.Pp
+.Nm
+.Cm edit
+.Ar id-or-alias
+.Op Fl -url Ar url
+.Op Fl -alias Ar alias
+.Op Fl -title Ar title
+.Op Fl -social-title Ar title
+.Op Fl -social-description Ar text
+.Op Fl -social-image-url Ar url
+.Op Fl -social-image Ar path
+.Op Fl -remove-social-image
 .Op Fl -json
 .Op Fl -quiet
 .Pp
@@ -44,8 +62,8 @@
 .Sh DESCRIPTION
 .Nm
 is the official command-line interface for PeakURL.
-It wraps the PeakURL HTTP API for creating, listing, importing, exporting,
-and deleting short links.
+It wraps the PeakURL HTTP API for creating, editing, listing, importing,
+exporting, and deleting short links.
 It also supports authenticated account inspection, site system status,
 outbound webhooks, CLI update checks, and public PeakURL core package
 downloads.
@@ -136,7 +154,15 @@ peakurl core download --force
 Create a short link for a destination URL.
 .Bd -literal -offset indent
 peakurl create https://example.com/docs --alias docs
-peakurl create https://example.com/launch --title "Launch Page"
+peakurl create https://example.com/launch --title "Launch Page" --social-title "Launch Page" --social-image-url https://example.com/og.png
+.Ed
+.It Cm edit Ar id-or-alias
+Update an existing short link's destination URL, title, status, expiration,
+password, or social preview fields by ID, alias, or short code.
+.Bd -literal -offset indent
+peakurl edit docs --social-title "PeakURL Docs" --social-description "Documentation and guides" --social-image-url https://peakurl.org/og.png
+peakurl edit docs --url https://peakurl.org/docs/v2 --title "Updated Docs"
+peakurl edit url_123 --remove-social-image
 .Ed
 .It Cm import Ar file
 Import short links from a local CSV, JSON, or XML file.
@@ -268,14 +294,18 @@ Print machine-readable JSON where supported.
 Print minimal output for scripts or suppress success output for destructive
 commands.
 .El
-.Ss Link Creation Options
-.Bl -tag -width "--utm-campaign"
+.Ss Link Creation And Editing Options
+.Bl -tag -width "--remove-social-image"
+.It Fl -url Ar url
+Updated destination URL when editing an existing short link.
 .It Fl -alias Ar alias
-Custom alias for the short link.
+Custom alias when creating a short link.
 .It Fl -title Ar title
 Title stored with the short link.
 .It Fl -password Ar password
 Password-protect the short link.
+.It Fl -clear-password
+Remove password protection when editing a short link.
 .It Fl -status Ar status
 Link status, for example
 .Sy active
@@ -283,16 +313,28 @@ or
 .Sy paused .
 .It Fl -expires-at Ar iso
 Expiration timestamp in ISO-8601 format.
+.It Fl -clear-expires-at
+Remove the expiration timestamp when editing a short link.
 .It Fl -utm-source Ar value
-UTM source value.
+UTM source value when creating a short link.
 .It Fl -utm-medium Ar value
-UTM medium value.
+UTM medium value when creating a short link.
 .It Fl -utm-campaign Ar value
-UTM campaign value.
+UTM campaign value when creating a short link.
 .It Fl -utm-term Ar value
-UTM term value.
+UTM term value when creating a short link.
 .It Fl -utm-content Ar value
-UTM content value.
+UTM content value when creating a short link.
+.It Fl -social-title Ar title
+Social preview (Open Graph / Twitter Card) title.
+.It Fl -social-description Ar text
+Social preview description.
+.It Fl -social-image-url Ar url
+Remote image URL for the social preview card.
+.It Fl -social-image Ar path
+Local image file (JPG, PNG, WEBP, or GIF up to 5 MB) to upload for the social preview card.
+.It Fl -remove-social-image
+Remove the existing social preview image when editing a short link.
 .El
 .Ss List Options
 .Bl -tag -width "--sort-order"
@@ -394,6 +436,7 @@ when environment credentials should no longer apply.
 .Bd -literal -offset indent
 peakurl login --base-url https://example.com/api/v1 --api-key YOUR_API_KEY
 peakurl create https://example.com/docs --alias docs
+peakurl edit docs --social-title "PeakURL Docs" --social-image-url https://peakurl.org/og.png
 peakurl list --limit 10
 peakurl get docs
 peakurl export --format json --stdout
@@ -401,11 +444,11 @@ peakurl webhook create https://example.com/api/webhooks/peakurl --event link.cli
 peakurl core download
 .Ed
 .Sh SEE ALSO
-.Lk https://peakurl.org/docs/cli "PeakURL CLI documentation"
+.Lk https://go.peakurl.org/2aae02 "PeakURL CLI documentation"
 .Pp
-.Lk https://peakurl.org/docs/api "PeakURL API documentation"
+.Lk https://go.peakurl.org/d373f6 "PeakURL API documentation"
 .Pp
-.Lk https://www.npmjs.com/package/peakurl "peakurl npm package"
+.Lk https://go.peakurl.org/cli "peakurl npm package"
 .Sh BUGS
 Report issues at
 .Lk https://github.com/PeakURL/CLI/issues .

@@ -75,6 +75,27 @@ export interface LinkInput {
     utmCampaign?: string;
     utmTerm?: string;
     utmContent?: string;
+    socialTitle?: string;
+    socialDescription?: string;
+    socialImageUrl?: string;
+    socialImagePath?: string;
+}
+
+/**
+ * Link fields accepted by `PUT /api/v1/urls/{id}` and `POST /api/v1/urls/{id}`.
+ */
+export interface UpdateLinkPayload {
+    destinationUrl?: string;
+    title?: string;
+    password?: string;
+    clearPassword?: boolean;
+    status?: string;
+    expiresAt?: string | null;
+    socialTitle?: string;
+    socialDescription?: string;
+    socialImageUrl?: string;
+    socialImagePath?: string;
+    removeSocialImage?: boolean;
 }
 
 /**
@@ -88,6 +109,16 @@ export interface User {
     lastName?: string;
     role?: string;
     [key: string]: unknown;
+}
+
+/**
+ * Nested social preview metadata returned on link records by the PeakURL API.
+ */
+export interface SocialPreview {
+    title?: string | null;
+    description?: string | null;
+    imageUrl?: string | null;
+    externalImageUrl?: string | null;
 }
 
 /**
@@ -105,6 +136,10 @@ export interface Link {
     uniqueClicks?: number;
     hasPassword?: boolean;
     expiresAt?: string | null;
+    socialTitle?: string | null;
+    socialDescription?: string | null;
+    socialImageUrl?: string | null;
+    socialPreview?: SocialPreview | null;
     createdAt?: string;
     updatedAt?: string;
     [key: string]: unknown;

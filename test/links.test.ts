@@ -57,6 +57,49 @@ describe("PeakURL CLI Link Management", () => {
         assert.match(result.stdout, /Trash emptied\./);
     });
 
+    it("creates a short link with social preview metadata", async () => {
+        const result = await runCli([
+            "create",
+            "https://example.com/launch",
+            "--alias",
+            "launch",
+            "--social-title",
+            "Launch Preview Title",
+            "--social-description",
+            "Launch Preview Description",
+            "--social-image-url",
+            "https://example.com/og.png",
+        ]);
+
+        assert.equal(result.code, 0);
+        assert.match(result.stdout, /Short URL created/);
+        assert.match(result.stdout, /Launch Preview Title/);
+        assert.match(result.stdout, /Launch Preview Description/);
+        assert.match(result.stdout, /https:\/\/example\.com\/og\.png/);
+    });
+
+    it("edits an existing short link by alias including social preview fields", async () => {
+        const result = await runCli([
+            "edit",
+            "launch",
+            "--title",
+            "Updated Launch",
+            "--social-title",
+            "Updated Social Title",
+            "--social-description",
+            "Updated Social Description",
+            "--social-image-url",
+            "https://example.com/updated-og.png",
+        ]);
+
+        assert.equal(result.code, 0);
+        assert.match(result.stdout, /Short URL updated/);
+        assert.match(result.stdout, /Updated Launch/);
+        assert.match(result.stdout, /Updated Social Title/);
+        assert.match(result.stdout, /Updated Social Description/);
+        assert.match(result.stdout, /https:\/\/example\.com\/updated-og\.png/);
+    });
+
     it("exports links as CSV", async () => {
         const workDir = await mkdtemp(join(tmpdir(), "peakurl-export-"));
         const outputPath = join(workDir, "links.csv");
@@ -76,7 +119,7 @@ describe("PeakURL CLI Link Management", () => {
 
         assert.match(
             content,
-            /^url,alias,title,password,expires,short_url,clicks,unique_clicks,created_at/m,
+            /^url,alias,title,password,expires,short_url,clicks,unique_clicks,created_at,social_title,social_description,social_image_url/m,
         );
         assert.match(content, /https:\/\/example\.com\/launch/);
         assert.match(content, /https:\/\/peakurl\.test\/launch/);
@@ -89,9 +132,9 @@ describe("PeakURL CLI Link Management", () => {
         await writeFile(
             importPath,
             [
-                "url,alias,title,expires",
-                "https://example.com/docs,docs,Documentation,2026-06-01T00:00:00Z",
-                "https://example.com/pricing,pricing,Pricing,",
+                "url,alias,title,expires,social_title,social_description,social_image_url",
+                "https://example.com/docs,docs,Documentation,2026-06-01T00:00:00Z,Docs Preview,Docs Description,https://example.com/docs-og.png",
+                "https://example.com/pricing,pricing,Pricing,,,,",
             ].join("\n"),
             "utf8",
         );

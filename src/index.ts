@@ -11,6 +11,7 @@ import {
     deleteActivity,
     deleteLink,
     deleteWebhook,
+    editLink,
     exportLinks,
     getLink,
     importLinks,
@@ -73,7 +74,7 @@ function parseNumber(label: string) {
 function addExamples(command: Command, lines: string[]): Command {
     return command.addHelpText(
         "after",
-        `\nExamples:\n${lines.map((line) => `  ${line}`).join("\n")}\n\nDocumentation:\n  https://peakurl.org/docs/cli`,
+        `\nExamples:\n${lines.map((line) => `  ${line}`).join("\n")}\n\nDocumentation:\n  https://go.peakurl.org/2aae02`,
     );
 }
 
@@ -170,6 +171,7 @@ Common Commands:
   peakurl status
   peakurl core download
   peakurl list --limit 10
+  peakurl edit docs --social-title "Docs" --social-image-url https://example.com/og.png
   peakurl import ./links.csv
   peakurl export --format csv
   peakurl activity list
@@ -178,7 +180,7 @@ Common Commands:
   peakurl update --check
 
 Documentation:
-  https://peakurl.org/docs/cli
+  https://go.peakurl.org/2aae02
 
 Run 'peakurl <command> --help' for command-specific flags and examples.`,
         )
@@ -305,13 +307,75 @@ Run 'peakurl <command> --help' for command-specific flags and examples.`,
             .option("--utm-campaign <value>", "UTM campaign")
             .option("--utm-term <value>", "UTM term")
             .option("--utm-content <value>", "UTM content")
+            .option("--social-title <title>", "Social preview title")
+            .option("--social-description <text>", "Social preview description")
+            .option(
+                "--social-image-url <url>",
+                "Remote image URL for social preview",
+            )
+            .option(
+                "--social-image <path>",
+                "Local image file path for social preview",
+            )
             .option("--json", "Print machine-readable output")
             .option("--quiet", "Print only the created short URL")
             .action(createLink),
         [
             "peakurl create https://example.com/docs --alias docs",
-            'peakurl create https://example.com/launch --title "Launch Page"',
+            'peakurl create https://example.com/launch --title "Launch Page" --social-title "Launch Page" --social-image-url https://example.com/og.png',
             "peakurl create https://example.com --json",
+        ],
+    );
+
+    addExamples(
+        program
+            .command("edit")
+            .summary("Edit an existing short link")
+            .description(
+                "Update an existing short link's destination URL, settings, or social preview by ID or alias.",
+            )
+            .helpOption("-h, --help", "Show help")
+            .argument("<id-or-alias>", "Link identifier or alias")
+            .option("--url <url>", "Updated destination URL")
+            .option("--title <title>", "Updated title")
+            .option(
+                "--password <password>",
+                "Set or update password protection",
+            )
+            .option("--clear-password", "Remove password protection")
+            .option(
+                "--status <status>",
+                "Updated link status, for example active, inactive, or expired",
+            )
+            .option(
+                "--expires-at <iso>",
+                "Updated expiration timestamp in ISO-8601 format",
+            )
+            .option("--clear-expires-at", "Remove expiration timestamp")
+            .option("--social-title <title>", "Updated social preview title")
+            .option(
+                "--social-description <text>",
+                "Updated social preview description",
+            )
+            .option(
+                "--social-image-url <url>",
+                "Updated remote image URL for social preview",
+            )
+            .option(
+                "--social-image <path>",
+                "Upload a local image file for social preview",
+            )
+            .option(
+                "--remove-social-image",
+                "Remove existing social preview image",
+            )
+            .option("--json", "Print machine-readable output")
+            .option("--quiet", "Print only the short URL")
+            .action(editLink),
+        [
+            'peakurl edit docs --social-title "PeakURL Docs" --social-description "Documentation and guides" --social-image-url https://peakurl.org/og.png',
+            'peakurl edit docs --url https://peakurl.org/docs/v2 --title "Updated Docs"',
+            "peakurl edit url_123 --remove-social-image --json",
         ],
     );
 

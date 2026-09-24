@@ -23,7 +23,7 @@ import {
     writeJson,
     writeStdout,
 } from "../lib/index.js";
-import type { OutputOptions } from "../types.js";
+import type { OutputOptions, UpdateLinkPayload } from "../types.js";
 
 interface CreateOptions extends OutputOptions {
     alias?: string;
@@ -36,6 +36,25 @@ interface CreateOptions extends OutputOptions {
     utmCampaign?: string;
     utmTerm?: string;
     utmContent?: string;
+    socialTitle?: string;
+    socialDescription?: string;
+    socialImageUrl?: string;
+    socialImage?: string;
+}
+
+export interface EditOptions extends OutputOptions {
+    url?: string;
+    title?: string;
+    password?: string;
+    clearPassword?: boolean;
+    status?: string;
+    expiresAt?: string;
+    clearExpiresAt?: boolean;
+    socialTitle?: string;
+    socialDescription?: string;
+    socialImageUrl?: string;
+    socialImage?: string;
+    removeSocialImage?: boolean;
 }
 
 interface ListOptions extends OutputOptions {
@@ -82,6 +101,12 @@ export async function createLink(
     destinationUrl: string,
     options: CreateOptions,
 ): Promise<void> {
+    if (options.socialImage && options.socialImageUrl) {
+        throw new CliError(
+            "Use either --social-image or --social-image-url, not both.",
+        );
+    }
+
     const config = await getAuthConfig(process.env);
     const response = await new ApiClient(config).createUrl({
         destinationUrl: normalizeDestinationUrl(destinationUrl),
@@ -97,6 +122,20 @@ export async function createLink(
         ...(options.utmCampaign ? { utmCampaign: options.utmCampaign } : {}),
         ...(options.utmTerm ? { utmTerm: options.utmTerm } : {}),
         ...(options.utmContent ? { utmContent: options.utmContent } : {}),
+        ...(options.socialTitle ? { socialTitle: options.socialTitle } : {}),
+        ...(options.socialDescription
+            ? { socialDescription: options.socialDescription }
+            : {}),
+        ...(options.socialImageUrl
+            ? {
+                  socialImageUrl: normalizeDestinationUrl(
+                      options.socialImageUrl,
+                  ),
+              }
+            : {}),
+        ...(options.socialImage
+            ? { socialImagePath: resolve(options.socialImage) }
+            : {}),
     });
 
     if (options.json) {
@@ -110,6 +149,116 @@ export async function createLink(
     }
 
     writeStdout(successLine(response.message));
+    writeStdout(formatLinkDetails(response.data));
+}
+
+/**
+ * Edits/updates an existing short link by identifier or alias.
+ *
+ * Resolves the link first via `GET /api/v1/urls/{idOrAlias}` to obtain its
+ * stable row ID, then sends `PUT /api/v1/urls/{id}` (or `POST /api/v1/urls/{id}`
+ * when uploading a local social image file).
+ *
+ * @param idOrAlias Link identifier or alias passed on the command line.
+ * @param options Parsed update and output options.
+ */
+export async function editLink(
+    idOrAlias: string,
+    options: EditOptions,
+): Promise<void> {
+    if (options.socialImage && options.socialImageUrl) {
+        throw new CliError(
+            "Use either --social-image or --social-image-url, not both.",
+        );
+    }
+
+    if (
+        options.removeSocialImage &&
+        (options.socialImage || options.socialImageUrl)
+    ) {
+        throw new CliError(
+            "Cannot combine --remove-social-image with --social-image or --social-image-url.",
+        );
+    }
+
+    if (options.password !== undefined && options.clearPassword) {
+        throw new CliError(
+            "Use either --password or --clear-password, not both.",
+        );
+    }
+
+    if (options.expiresAt !== undefined && options.clearExpiresAt) {
+        throw new CliError(
+            "Use either --expires-at or --clear-expires-at, not both.",
+        );
+    }
+
+    const payload: UpdateLinkPayload = {
+        ...(options.url !== undefined
+            ? { destinationUrl: normalizeDestinationUrl(options.url) }
+            : {}),
+        ...(options.title !== undefined ? { title: options.title } : {}),
+        ...(options.clearPassword
+            ? { clearPassword: true }
+            : options.password !== undefined
+              ? { password: options.password }
+              : {}),
+        ...(options.status !== undefined ? { status: options.status } : {}),
+        ...(options.clearExpiresAt
+            ? { expiresAt: "" }
+            : options.expiresAt !== undefined
+              ? { expiresAt: normalizeExpiresAt(options.expiresAt) }
+              : {}),
+        ...(options.socialTitle !== undefined
+            ? { socialTitle: options.socialTitle }
+            : {}),
+        ...(options.socialDescription !== undefined
+            ? { socialDescription: options.socialDescription }
+            : {}),
+        ...(options.socialImageUrl !== undefined
+            ? {
+                  socialImageUrl: options.socialImageUrl
+                      ? normalizeDestinationUrl(options.socialImageUrl)
+                      : "",
+              }
+            : {}),
+        ...(options.socialImage
+            ? { socialImagePath: resolve(options.socialImage) }
+            : {}),
+        ...(options.removeSocialImage ? { removeSocialImage: true } : {}),
+    };
+
+    if (Object.keys(payload).length === 0) {
+        throw new CliError(
+            "Specify at least one field to update (for example --title, --url, --social-title, --social-description, or --social-image-url).",
+        );
+    }
+
+    const config = await getAuthConfig(process.env);
+    const client = new ApiClient(config);
+
+    const lookupResponse = await client.getUrl(idOrAlias.trim());
+    const resolvedId = getLinkId(lookupResponse.data);
+
+    if (!resolvedId) {
+        throw new CliError(
+            "PeakURL returned a link record without an ID, so the CLI cannot update it safely.",
+        );
+    }
+
+    const response = await client.updateUrl(resolvedId, payload);
+
+    if (options.json) {
+        writeJson(response);
+        return;
+    }
+
+    if (options.quiet) {
+        writeStdout(getQuietLinkValue(response.data));
+        return;
+    }
+
+    writeStdout(successLine(response.message || "Short URL updated."));
     writeStdout(formatLinkDetails(response.data));
 }
 

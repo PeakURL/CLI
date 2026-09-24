@@ -22,7 +22,7 @@ describe("PeakURL CLI Authentication", () => {
         assert.match(result.stdout, /status/);
         assert.match(result.stdout, /create/);
         assert.match(result.stdout, /Documentation:/);
-        assert.match(result.stdout, /https:\/\/peakurl\.org\/docs\/cli/);
+        assert.match(result.stdout, /https:\/\/go\.peakurl\.org\/2aae02/);
     });
 
     it("persists verified credentials to the config file", async () => {
