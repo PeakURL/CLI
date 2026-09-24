@@ -6,7 +6,7 @@ The official command-line interface for PeakURL.
 
 Use `peakurl` to create short links, inspect existing links, and manage your PeakURL account from the terminal.
 
-Learn more in the full CLI docs [here.](https://go.peakurl.org/7a0e0b)
+Learn more in the full CLI docs [here.](https://go.peakurl.org/2aae02)
 
 ## Install
 
@@ -66,6 +66,7 @@ export PEAKURL_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef
 | `peakurl status`                  | Show the current system status snapshot for the site.       |
 | `peakurl core download`           | Download and extract the latest PeakURL core package.       |
 | `peakurl create <url>`            | Create a new short link.                                    |
+| `peakurl edit <id-or-alias>`      | Update an existing link's destination URL or metadata.      |
 | `peakurl import <file>`           | Import links from a local CSV, JSON, or XML file.           |
 | `peakurl export`                  | Export accessible links as CSV, JSON, or XML.               |
 | `peakurl list`                    | List links in your account.                                 |
@@ -84,8 +85,23 @@ Create a short link:
 peakurl create \
     https://example.com \
     --alias example \
-    --title "Example"
+    --title "Example" \
+    --social-title "Example — Official Site" \
+    --social-description "Explore the Example platform." \
+    --social-image-url https://example.com/og.png
 ```
+
+Edit an existing short link:
+
+```bash
+peakurl edit example \
+    --url https://example.com/updated-page \
+    --social-title "Example — Updated Preview" \
+    --social-description "Updated Open Graph description." \
+    --social-image-url https://example.com/new-og.png
+```
+
+You can update a link's destination URL (`--url`), title, status, expiration, password, and social preview fields.
 
 List links as JSON:
 
@@ -269,7 +285,7 @@ export PEAKURL_DISABLE_UPDATE_CHECK=1
 ## Links
 
 - [Website](https://peakurl.org/)
-- [CLI docs](https://go.peakurl.org/7a0e0b)
+- [CLI docs](https://go.peakurl.org/2aae02)
 - [API docs](https://go.peakurl.org/d373f6)
-- [npm package](https://www.npmjs.com/package/peakurl)
+- [npm package](https://go.peakurl.org/cli)
 - [Issues](https://github.com/PeakURL/CLI/issues)
