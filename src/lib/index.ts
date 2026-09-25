@@ -5,6 +5,7 @@ export * from "./errors.js";
 export * from "./exports.js";
 export * from "./imports.js";
 export * from "./links.js";
+export * from "./man.js";
 export * from "./output.js";
 export * from "./status.js";
 export * from "./job.js";

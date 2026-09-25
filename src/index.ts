@@ -41,6 +41,7 @@ import {
     errorLine,
     formatTable,
     parseWebhookEvents,
+    registerManPage,
     writeStderr,
 } from "./lib/index.js";
 
@@ -133,6 +134,7 @@ const COMMAND_SUGGESTIONS: Record<string, string> = {
  * via Commander / CLI error handling.
  */
 async function main(): Promise<void> {
+    registerManPage();
     const program = new Command();
     const version = await getCliVersion();
 

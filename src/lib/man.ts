@@ -17,13 +17,36 @@ const MAN_FILENAME = "peakurl.1";
 const MANPATH_FILENAME = ".manpath";
 
 /**
+ * Finds the root directory of the installed `peakurl` package.
+ *
+ * @returns Absolute package root path, or `null` when the manual page file is
+ * not present alongside the executable.
+ */
+function getPackageRoot(): string | null {
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    const candidates = [
+        resolve(currentDir, ".."),
+        resolve(currentDir, "..", ".."),
+    ];
+
+    for (const candidate of candidates) {
+        if (existsSync(resolve(candidate, MAN_DIR, MAN_FILENAME))) {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Creates or updates the `peakurl.1` symlink inside a `man1` directory.
  *
- * @param {string} manSectionDir Target `man1` directory path.
- * @param {string} sourceFile Absolute path to the bundled `man/peakurl.1` file.
- * @returns {boolean} `true` when linked, or `false` when the directory is read-only.
+ * @param manSectionDir Target `man1` directory path.
+ * @param sourceFile Absolute path to the bundled `man/peakurl.1` file.
+ * @returns `true` when the symlink points to `sourceFile`, or `false` when the
+ * target directory is not writable by the current user.
  */
-function linkManPage(manSectionDir, sourceFile) {
+function linkManPage(manSectionDir: string, sourceFile: string): boolean {
     const targetFile = resolve(manSectionDir, MAN_FILENAME);
 
     try {
@@ -57,10 +80,10 @@ function linkManPage(manSectionDir, sourceFile) {
  * Adds the user-level manual directory to `~/.manpath` on Linux so `man-db`
  * discovers `~/.local/share/man/man1/peakurl.1` without requiring root access.
  *
- * @param {string} homeDir Current user's home directory.
- * @param {string} userManBase Path to `~/.local/share/man`.
+ * @param homeDir Current user's home directory.
+ * @param userManBase Path to `~/.local/share/man`.
  */
-function updateManpathConfig(homeDir, userManBase) {
+function updateManpathConfig(homeDir: string, userManBase: string): void {
     const configPath = resolve(homeDir, MANPATH_FILENAME);
     const entry = `MANDATORY_MANPATH ${userManBase}`;
     const content = existsSync(configPath)
@@ -79,25 +102,29 @@ function updateManpathConfig(homeDir, userManBase) {
 }
 
 /**
- * Registers the `peakurl(1)` manual page during global package installation.
+ * Registers the `peakurl(1)` manual page so `man peakurl` works out of the box
+ * across macOS and Linux installations.
  */
-function registerManPage() {
-    if (
-        process.env.npm_config_global !== "true" ||
-        process.platform === "win32"
-    ) {
+export function registerManPage(): void {
+    if (process.platform === "win32") {
         return;
     }
 
     try {
-        const currentDir = dirname(fileURLToPath(import.meta.url));
-        const packageRoot = resolve(currentDir, "..");
-        const sourceFile = resolve(packageRoot, MAN_DIR, MAN_FILENAME);
+        const packageRoot = getPackageRoot();
 
-        if (!existsSync(sourceFile)) {
+        if (!packageRoot) {
             return;
         }
 
+        if (
+            !packageRoot.includes("/node_modules/") &&
+            process.env.npm_config_global !== "true"
+        ) {
+            return;
+        }
+
+        const sourceFile = resolve(packageRoot, MAN_DIR, MAN_FILENAME);
         const prefix =
             process.env.npm_config_prefix ||
             resolve(packageRoot, "..", "..", "..");
@@ -123,8 +150,6 @@ function registerManPage() {
             updateManpathConfig(homeDir, userManBase);
         }
     } catch {
-        // Keep package installation unaffected if manual page registration fails.
+        // Keep CLI execution unaffected if manual page registration fails.
     }
 }
-
-registerManPage();

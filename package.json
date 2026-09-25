@@ -24,9 +24,6 @@
     "bin": {
         "peakurl": "bin/peakurl.js"
     },
-    "man": [
-        "man/peakurl.1"
-    ],
     "files": [
         "bin",
         "man",
